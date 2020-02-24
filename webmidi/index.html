@@ -1,1 +1,68 @@
-Web MIDI
+<!doctype html>
+<html>
+<head>
+	<script src="https://unpkg.com/rxjs/bundles/rxjs.umd.min.js">
+	</script>
+
+	<script>
+		function onMIDIsuccess(midiAccess) {
+			let ainit = document.querySelector('body a:first-child')
+			ainit.className = 'hidden'
+
+			// For testing, use first input
+			console.log(midiAccess.inputs)
+			for (let input of midiAccess.inputs.values()) {
+				console.log(input)
+				input.onmidimessage = function(data) {
+					console.log(data)
+				}
+			}
+		}
+
+		function onMIDIfailure(msg) {
+			console.log('Your browser does NOT support Web MIDI')
+		}
+
+
+		//const { range } = rxjs;
+		//const { map, filter } = rxjs.operators;
+
+		//range(1, 200).pipe(
+		//	filter(x => x % 2 === 1),
+		//	map(x => x + x)
+		//).subscribe(x => console.log(x));
+		window.onload = function() {
+			let init = document.querySelector('body a:first-child');
+
+			init.onclick = function() {
+				if (window.navigator &&
+					typeof 
+						navigator.requestMIDIAccess === 'function') {
+					navigator
+						.requestMIDIAccess()
+						.then(onMIDIsuccess, onMIDIfailure);
+				} else {
+					onMIDIfailure('')
+				}
+			}
+		}
+	</script>
+	
+	<style>
+		.midi-initializer {
+			background-color: gray;
+			color: white;
+			width: 100vw;
+			display: block;
+			text-align: center;
+		}
+
+		.hidden {
+			display: none;
+		}
+	</style>
+</head>
+<body>
+	<a class="midi-initializer" href="javascript:void(0);">Initialize Web MIDI</a>
+</body>
+</html>
