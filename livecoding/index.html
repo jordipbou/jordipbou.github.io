@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Live coding environment</title>
+
+	<!-- CodeMirror -->
+    <script type="text/javascript" src="https://unpkg.com/codemirror"></script>
+	<link rel="stylesheet" type="text/css" href="https://unpkg.com/codemirror/lib/codemirror.css">
+   	<link rel="stylesheet" type="text/css" href="https://unpkg.com/codemirror/theme/mbo.css">
+	 <script type="text/javascript" src="https://unpkg.com/codemirror/mode/xml/xml.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/codemirror/mode/css/css.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/codemirror/mode/javascript/javascript.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/codemirror/mode/htmlmixed/htmlmixed.js"></script>
+
+	<!-- X3DOM -->
+    <script type="text/javascript" src="https://unpkg.com/x3dom"></script>
+	<link rel="stylesheet" type="text/css" href="https://unpkg.com/x3dom/x3dom.css">
+
+	<!-- morphdom -->
+	<script type="text/javascript" src="https://unpkg.com/morphdom/dist/morphdom-umd.js"></script>
+
+
+	<style>
+		html, body {
+			margin: 0px;
+			padding: 0px;
+			width: 100vw;
+			height: 100vh;
+		}
+
+		#editor {
+			position: absolute;
+			top: 0px;
+			left: 0px;
+			width: 100%;
+			height: 100%;
+			z-index: 1;
+			opacity: 0.5;
+		}
+
+		.CodeMirror {
+			width: 100%;
+			height: 100%;
+		}
+
+		#x3d {
+			position: absolute;
+			top: 0px;
+			left: 0px;
+			width: 100%;
+			height: 100%;
+		}
+	</style>
+</head>
+<body>
+	<div id="editor"></div>
+	<x3d id="x3d" width='100%' height='100%'>
+	</x3d>
+		<!--scene>
+			<shape>
+				<appearance>
+					<material diffuseColor='1 0 0'></material>
+				</appearance>
+				<box></box>
+			</shape>
+		</scene-->
+</body>
+<script>
+	var codemirror = CodeMirror(document.querySelector('#editor'), {
+		lineNumbers: true,
+		mode: {
+			name: "htmlmixed"
+		},
+		theme: "mbo"
+	});
+
+	codemirror.on('change', e => {
+		//let background_node = document.getElementById("background");
+		//morphdom(background_node, '<div id="background">' + codemirror.doc.getValue() + '</div>');
+		let x3d_node = document.getElementById("x3d");
+		morphdom(x3d_node, '<x3d id="x3d" width="100%" height="100%">' + codemirror.doc.getValue() + '</x3d>');
+	});
+</script>
+</html>

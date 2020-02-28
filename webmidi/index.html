@@ -1,13 +1,19 @@
 <!doctype html>
 <html>
 <head>
-	<script src="https://unpkg.com/rxjs/bundles/rxjs.umd.min.js">
-	</script>
+	<script src="https://unpkg.com/rxjs/bundles/rxjs.umd.min.js"></script>
+	<script src="https://unpkg.com/vue/dist/vue.js"></script>
+	<!-- vue-rx -->
 
 	<script>
 		function onMIDIsuccess(midiAccess) {
-			let ainit = document.querySelector('body a:first-child')
+			let ainit = document.querySelector('.midi-initializer')
+			let ports = document.querySelector('.midi-ports')
 			ainit.className = 'hidden'
+			ports.className = ports.className.replace(' hidden', '')
+
+			midiAccess.onstatechange = function(e) {
+			}
 
 			// For testing, use first input
 			console.log(midiAccess.inputs)
@@ -32,7 +38,7 @@
 		//	map(x => x + x)
 		//).subscribe(x => console.log(x));
 		window.onload = function() {
-			let init = document.querySelector('body a:first-child');
+			let init = document.querySelector('.midi-initializer')
 
 			init.onclick = function() {
 				if (window.navigator &&
@@ -44,11 +50,23 @@
 				} else {
 					onMIDIfailure('')
 				}
+
+				return false
 			}
 		}
 	</script>
 	
 	<style>
+		.hidden {
+			display: none;
+		}
+
+		.btn {
+			padding: 5px;
+			border-radius: 5px;
+			text-decoration: none;
+		}
+
 		.midi-initializer {
 			background-color: gray;
 			color: white;
@@ -57,12 +75,28 @@
 			text-align: center;
 		}
 
-		.hidden {
-			display: none;
+		.midi-ports {
+			display: flex;
+			flex-direction: row;
+		}
+
+		.input-ports .output-ports {
+			display: flex;
+			flex-direction: column;
 		}
 	</style>
 </head>
 <body>
-	<a class="midi-initializer" href="javascript:void(0);">Initialize Web MIDI</a>
+	<div class="midi-setup">
+		<a class="midi-initializer btn" href="javascript:void(0);">
+			Initialize Web MIDI
+		</a>
+		<div class="midi-ports hidden">
+			<div class="input-ports">
+			</div>
+			<div class="output-ports">
+			</div>
+		</div>
+	</div>
 </body>
 </html>
