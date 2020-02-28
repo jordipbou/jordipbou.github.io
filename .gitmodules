@@ -1,0 +1,3 @@
+[submodule "efimera"]
+	path = efimera
+	url = https://github.com/jordipbou/efimera.git
