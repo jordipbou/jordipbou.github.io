@@ -630,7 +630,7 @@ li.CodeMirror-hint-active {
 .CodeMirror{
   height:100% !important
 }
-.full-screen.svelte-1i4dwe7{
+.full-screen.svelte-f5d0b{
   position: absolute;
   top: 0;
   left: 0;
@@ -638,13 +638,13 @@ li.CodeMirror-hint-active {
   height: 100%;
 }
 
-.split-screen.svelte-1i4dwe7{
+.split-screen.svelte-f5d0b{
   position: relative;
   width: 50%;
   height: 100%;
 }
 
-.editor-full.svelte-1i4dwe7{
+.editor-full.svelte-f5d0b{
   z-index: 10;
   opacity: 0.75;
 }
