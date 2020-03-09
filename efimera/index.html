@@ -4,14 +4,33 @@
 	<meta charset=utf-8>
 	<meta name=viewport content='width=device-width,initial-scale=1'>
 
-	<title>Svelte app</title>
+	<title>Efimera - JS Live Coding Environment</title>
 
 	<link rel=icon type=image/png href=./favicon.png>
 	<link rel=stylesheet href=./build/bundle.css>
 
 	<script defer src=./build/bundle.js></script>
+	<script>
+		window.pikaImport = (pkg, ns, d = false) => {
+			if (ns === undefined) ns = pkg;
 
-	<script defer src=./build/rxjs.umd.js></script>
+			let p =
+				import('https://cdn.pika.dev/' + pkg)
+					.then(m => window[ns] = d ? m.default : m)
+
+			return p
+		}
+
+		window.unpkgImport = (pkg, ns, d = false) => {
+			if (ns === undefined) ns = pkg;
+
+			let p = 
+				import('https://unpkg.com/' + pkg)
+					.then(m => window[ns] = d ? m.default : m)
+
+			return p
+		}
+	</script>
 </head>
 
 <body>
