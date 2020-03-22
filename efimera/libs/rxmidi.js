@@ -30,7 +30,7 @@
 	'use strict'
 
 	const { Subject, pipe } = rxjs;
-	const { filter, map } = rxjs.operators;
+	const { filter, map, mergeMap } = rxjs.operators;
 
 	const RxMidi = {
 		midiAccess: {},
@@ -74,21 +74,14 @@
 		// MIDI Message Helpers
 		// Channel Voice Messages
 		isNoteOn: d => d.data[0] >> 4 === 9,
-		filterNoteOn: () => pipe(filter(RxMidi.isNoteOn)),
 		isNoteOff: d => d.data[0] >> 4 === 8,
-		filterNoteOff: () => pipe(filter(RxMidi.isNoteOff)),
 		isNote: d => RxMidi.isNoteOn(d) || RxMidi.isNoteOff(d),
-		filterNote: () => pipe(filter(RxMidi.isNote)),
 		isPolyPressure: d => d.data[0] >> 4 === 10,
-		filterPolyPressure: () => pipe(filter(RxMidi.isPolyPressure)),
+		hasNote: d => RxMidi.isNote(d) || RxMidi.isPolyPressure(d),
 		isControlChange: d => d.data[0] >> 4 === 11,
-		filterControlChange: () => pipe(filter(RxMidi.isControlChange)),
 		isProgramChange: d => d.data[0] >> 4 === 12,
-		filterProgramChange: () => pipe(filter(RxMidi.isProgramChange)),
 		isChannelPressure: d => d.data[0] >> 4 === 13,
-		filterChannelPressure: () => pipe(filter(RxMidi.isChannelPressure)),
 		isPitchBend: d => d.data[0] >> 4 === 14,
-		filterPitchBend: () => pipe(filter(RxMidi.isPitchBend)),
 		// Channel Mode Messages
 		isAllSoundOff: d => RxMidi.isControlChange(d) && d.data[1] === 120 && d.data[2] === 0,
 		isResetAll: d => RxMidi.isControlChange(d) && d.data[1] === 121,
@@ -109,7 +102,6 @@
 			RxMidi.isOmniModeOn(d) ||
 			RxMidi.isMonoModeOn(d) ||
 			RxMidi.isPolyModeOn(d),
-		filterChannelMode: () => pipe(filter(RxMidi.isChannelMode)),
 		isChannelVoice: d => 
 			RxMidi.isNote(d) ||
 			RxMidi.isPolyPressure(d) ||
@@ -117,23 +109,50 @@
 			RxMidi.isProgramChange(d) ||
 			RxMidi.isChannelPressure(d) ||
 			RxMidi.isPitchBend(d),
-		filterChannelVoice: () => pipe(filter(RxMidi.isChannelVoice)),
 		isChannelMessage: d => RxMidi.isChannelMode(d) || RxMidi.isChannelVoice(d),
-		filterChannelMessage: () => pipe(filter(RxMidi.isChannelMessage)),
 		// TODO: System Common Messages and System Real-Time Messages
 		// MIDI Message Utilities
-		mapChannel: ch => 
-			pipe(
-				map(d => {
-					// Independently of receiving channel, force MIDI message channel
-					// to the one indicated here.
-					if (RxMidi.isChannelMessage(d)) {
-						d.data[0] = (d.data[0] & 0xF0) + ch
+		filterNoteOn: () => pipe(filter(RxMidi.isNoteOn)),
+		filterNoteOff: () => pipe(filter(RxMidi.isNoteOff)),
+		filterNote: () => pipe(filter(RxMidi.isNote)),
+		filterPolyPressure: () => pipe(filter(RxMidi.isPolyPressure)),
+		filterControlChange: () => pipe(filter(RxMidi.isControlChange)),
+		filterProgramChange: () => pipe(filter(RxMidi.isProgramChange)),
+		filterChannelPressure: () => pipe(filter(RxMidi.isChannelPressure)),
+		filterPitchBend: () => pipe(filter(RxMidi.isPitchBend)),
+		filterChannelMode: () => pipe(filter(RxMidi.isChannelMode)),
+		filterChannelVoice: () => pipe(filter(RxMidi.isChannelVoice)),
+		filterChannelMessage: () => pipe(filter(RxMidi.isChannelMessage)),
+		forceChannel: ch => pipe(map(d => { 
+			if (RxMidi.isChannelMessage(d)) d.data[0] = (d.data[0] & 0xF0) + ch;
+			return d; })),
+		mapChannel: (chin, chout) => pipe(map(d => {
+			if (RxMidi.isChannelMessage(d) && (d.data[0] & 0xF) === chin) d.data[0] = (d.data[0] & 0xF0) + chout;
+			return d; })),
+		mapChannels: (chsin, chsout) => pipe(mergeMap(d => {
+			if (RxMidi.isChannelMessage(d) && chsin.includes(d.data[0] & 0xF)) {
+				let m = []
+				for (let ch of chsout) {
+					let t = {
+						deltaTime: d.deltaTime,
+						timeStamp: d.timeStamp,
+						data: [...d.data]
 					}
+					t.data[0] = (t.data[0] & 0xF0) + ch
+					m = m.concat(t)
+				}
 
-					return d
-				})
-			),
+				return m
+			} else {
+				return rxjs.from([d])
+			}})),
+		mapController: (ccin, ccout) => pipe(map(d => {
+			if (RxMidi.isControlChange(d) && d.data[1] === ccin) d.data[1] = ccout;
+			return d; })),
+		transpose: i => pipe(map(d => { 
+			if (RxMidi.hasNote(d)) d.data[1] = d.data[1] + i;
+			return d; })),
+			
 	}
 
 	let _global = 
