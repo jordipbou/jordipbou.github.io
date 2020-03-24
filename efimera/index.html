@@ -34,7 +34,17 @@
 	<script defer src=./libs/all-around-keyboard.min.js></script>
 	<script defer src=./libs/rxjs/bundles/rxjs.umd.min.js></script>
 	<script defer type=module src=./libs/rxmidi.js></script>
+	<script defer type=module src=./libs/linnstrument.js></script>
 	<script defer type=module src=./libs/midi-parser-js/src/main.js></script>
+	<script defer type=module>
+		// Make everything of RxMidi and of LinnStrument
+		// directly accesible in global namespace
+		for (let p in RxMidi) 
+			window[p] = RxMidi[p]
+
+		for (let p in LinnStrumentJS)
+			window[p] = LinnStrumentJS[p]
+	</script>
 </head>
 <body>
 </body>
