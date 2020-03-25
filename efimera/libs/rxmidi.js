@@ -210,7 +210,35 @@
 		transpose: i => pipe(map(d => { 
 			if (RxMidi.hasNote(d)) d.data[1] = d.data[1] + i;
 			return d; })),
-			
+		// ---- MIDI Message creation
+		noteOn: o => {
+			if (typeof o === object) {
+				let msg = { ch: 0, note: 60, vel: 96 }
+				return [144 + msg.ch, msg.note, msg.vel]
+			} else {
+				return [144, o, 96]
+			}
+		},
+		noteOff: o => {
+			if (typeof o === object) {
+				let msg = {ch: 0, note: 60, vel: 96 }
+				return [128 + msg.ch, msg.note, msg.vel]
+			} else {
+				return [128, o, 96]
+			}
+		},
+		controller: (cn, val, ch = 0) => {
+			return [176 + ch, cn, val]
+		},
+		nrpn: (n, v, ch = 0) => {
+			return [
+				176 + ch, 99, Math.floor(n / 128), 
+				176 + ch, 98, n % 128, 
+				176 + ch, 6, Math.floor(v / 128), 
+				176 + ch, 38, v % 128, 
+				176 + ch, 101, 127,
+				176 + ch, 100, 127 ];
+		}
 	}
 
 	let _global = 

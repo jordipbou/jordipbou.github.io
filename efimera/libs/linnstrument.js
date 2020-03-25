@@ -1,7 +1,12 @@
 (function() {
 	'use strict'
 
+	const { Subject, pipe } = rxjs;
+	const { filter, map, mergeMap } = rxjs.operators;
+
 	const LinnStrumentJS = {
+		activateUserMode: () => {
+		},
 	}
 
 	let _global = 
