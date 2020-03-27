@@ -35,46 +35,53 @@
 	const RxMidi = {
 		midiAccess: {},
 		// == Initialization ==============================
-		init: n => {
-			navigator
-				.requestMIDIAccess()
-				.then(m => {
-					RxMidi.midiAccess = m
-					for (let [k, v] of m.inputs) {
-						v.subject = new Subject()	
-						v.onmidimessage = 
-							d => v.subject.next(d)
-					}
-				})
-		},
+		init: 
+			(sysex = false) => {
+				navigator
+					.requestMIDIAccess({ sysex: sysex })
+					.then(m => {
+						RxMidi.midiAccess = m
+						for (let [k, v] of m.inputs) {
+							v.subject = new Subject()	
+							v.onmidimessage = 
+								d => v.subject.next(d)
+						}
+					})
+			},
 		// == Inputs and outputs ==========================
-		logPorts: () => {
-			console.log('--- Input ports ---')
-			for (let [k, v] of RxMidi.midiAccess.inputs) 
-				console.log(v.name)
-			console.log('--- Output ports ---')
-			for (let [k, v] of RxMidi.midiAccess.outputs) 
-				console.log(v.name)
-		},
-		inputByName: n => {
-			for (let [k, v] of RxMidi.midiAccess.inputs) {
-				if (v.name.includes(n)) {
-					return v
+		logPorts: 
+			() => {
+				console.log('--- Input ports ---')
+				for (let [k, v] of RxMidi.midiAccess.inputs) 
+					console.log(v.name)
+				console.log('--- Output ports ---')
+				for (let [k, v] of RxMidi.midiAccess.outputs) 
+					console.log(v.name)
+			},
+		input: 
+			n => {
+				for (let [k, v] of RxMidi.midiAccess.inputs) {
+					if (v.name.includes(n)) {
+						return v
+					}
 				}
-			}
-		},
-		outputByName: n => {
-			for (let [k, v] of RxMidi.midiAccess.outputs) {
-				if (v.name.includes(n)) {
-					return v
+			},
+		outputByName: 
+			n => {
+				for (let [k, v] of RxMidi.midiAccess.outputs) {
+					if (v.name.includes(n)) {
+						return v
+					}
 				}
-			}
-		},
-		openOutputByName: n => {
-			let o = RxMidi.outputByName(n)
-			if (o !== undefined) o.open()
-			return o
-		},
+			},
+		output: 
+			n => {
+				let o = RxMidi.outputByName(n)
+				if (o !== undefined) o.open()
+				return o
+			},
+		send:
+			(o, msg) => output(o).send(msg),
 		// == MIDI Message Helpers
 		// ---- Channel Voice Messages
 		isNoteOn: 
@@ -211,42 +218,81 @@
 			if (RxMidi.hasNote(d)) d.data[1] = d.data[1] + i;
 			return d; })),
 		// ---- MIDI Message creation
-		on: o => {
-			if (typeof o === object) {
-				let msg = { ch: 0, note: 60, vel: 96 }
-				return [144 + msg.ch, msg.note, msg.vel]
-			} else {
-				return [144, o, 96]
-			}
-		},
-		off: o => {
-			if (typeof o === object) {
-				let msg = {ch: 0, note: 60, vel: 96 }
-				return [128 + msg.ch, msg.note, msg.vel]
-			} else {
-				return [128, o, 96]
-			}
-		},
+		on: 
+			(n, v = 96, ch = 0) => [144 + ch, n, v],
+		off: 
+			(n, v = 96, ch = 0) => [128 + ch, n, v],
+		pp:
+			(n, v = 96, ch = 0) => [160 + ch, n, v],
 		cc: 
-			(cn, val, ch = 0) => [176 + ch, cn, val],
+			(c, v, ch = 0) => [176 + ch, c, v],
+		pc:
+			(p, ch = 0) => [192 + ch, p],
+		cp:
+			(v, ch = 0) => [208 + ch, v],
+		pb:
+			(v, ch = 0) => [224 + ch, v % 128, v >> 7],
 		rpn: 
 			(n, v, ch = 0) => [
-				176 + ch, 101, Math.floor(n / 128), 
+				176 + ch, 101, n >> 7,
 				176 + ch, 100, n % 128, 
-				176 + ch, 6, Math.floor(v / 128), 
+				176 + ch, 6, v >> 7,
 				176 + ch, 38, v % 128, 
 				176 + ch, 101, 127,
 				176 + ch, 100, 127 
 			],
 		nrpn: 
 			(n, v, ch = 0) => [
-				176 + ch, 99, Math.floor(n / 128), 
+				176 + ch, 99, n >> 7, 
 				176 + ch, 98, n % 128, 
-				176 + ch, 6, Math.floor(v / 128), 
+				176 + ch, 6, v >> 7, 
 				176 + ch, 38, v % 128, 
 				176 + ch, 101, 127,
 				176 + ch, 100, 127 
 			],
+		// System common messages generation
+		syx:
+			b => [240, ...b, ...RxMidi.syxend()],
+		tc:
+			(t, v) => [241, (t << 4) + v],
+		spp:
+			b => [242, b % 128, b >> 7],
+		ss:
+			s => [243, s],
+		tun:
+			() => [246],
+		syxend:
+			() => [247],
+		// System real time messages generation
+		clock:
+			// TODO: Send 2 beats of MIDI Timing Clock for indicated BPM (1-999)
+			bpm => [],
+		mc:
+			() => [248],
+		start:
+			() => [250],
+		cont:
+			() => [251],
+		stop:
+			() => [252],
+		as:
+			() => [254],
+		rst:
+			() => [255],
+		panic:
+			() => {
+				let panic_msgs = []
+				for (let ch = 0; ch < 16; ch++) {
+					panic_msgs = panic_msgs.concat(cc(64, 0, ch))
+					panic_msgs = panic_msgs.concat(cc(120, 0, ch))
+					panic_msgs = panic_msgs.concat(cc(123, 0, ch))
+					for (let n = 0; n < 128; n++) {
+						panic_msgs = panic_msgs.concat(off(n, 0, ch))
+					}
+				}
+
+				return panic_msgs
+			},
 		// State management
 		combineState:
 			s => pipe(map(d => { d.state = { ...s }; return d })),
