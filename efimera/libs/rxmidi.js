@@ -211,7 +211,7 @@
 			if (RxMidi.hasNote(d)) d.data[1] = d.data[1] + i;
 			return d; })),
 		// ---- MIDI Message creation
-		noteOn: o => {
+		on: o => {
 			if (typeof o === object) {
 				let msg = { ch: 0, note: 60, vel: 96 }
 				return [144 + msg.ch, msg.note, msg.vel]
@@ -219,7 +219,7 @@
 				return [144, o, 96]
 			}
 		},
-		noteOff: o => {
+		off: o => {
 			if (typeof o === object) {
 				let msg = {ch: 0, note: 60, vel: 96 }
 				return [128 + msg.ch, msg.note, msg.vel]
@@ -227,18 +227,31 @@
 				return [128, o, 96]
 			}
 		},
-		controller: (cn, val, ch = 0) => {
-			return [176 + ch, cn, val]
-		},
-		nrpn: (n, v, ch = 0) => {
-			return [
+		cc: 
+			(cn, val, ch = 0) => [176 + ch, cn, val],
+		rpn: 
+			(n, v, ch = 0) => [
+				176 + ch, 101, Math.floor(n / 128), 
+				176 + ch, 100, n % 128, 
+				176 + ch, 6, Math.floor(v / 128), 
+				176 + ch, 38, v % 128, 
+				176 + ch, 101, 127,
+				176 + ch, 100, 127 
+			],
+		nrpn: 
+			(n, v, ch = 0) => [
 				176 + ch, 99, Math.floor(n / 128), 
 				176 + ch, 98, n % 128, 
 				176 + ch, 6, Math.floor(v / 128), 
 				176 + ch, 38, v % 128, 
 				176 + ch, 101, 127,
-				176 + ch, 100, 127 ];
-		}
+				176 + ch, 100, 127 
+			],
+		// State management
+		combineState:
+			s => pipe(map(d => { d.state = { ...s }; return d })),
+		saveState:
+			s => pipe(map(d => { s = { ...d.state }; return d })),
 	}
 
 	let _global = 
