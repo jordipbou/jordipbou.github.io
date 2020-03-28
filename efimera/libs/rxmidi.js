@@ -82,6 +82,17 @@
 			},
 		send:
 			(o, msg) => output(o).send(msg),
+		createKeyboard:
+			(sel) => {
+				let s = new Subject()
+				let k = document.createElement('all-around-keyboard')
+				document.querySelector(sel).appendChild(k)
+				k.addEventListener('keypress', function (e) { 
+					s.next({ timeStamp: performance.now(), data: on(e.index) })})
+				k.addEventListener('keyrelease', function (e) { 
+					s.next({ timeStamp: performance.now(), data: off(e.index) })})
+				return [s, k]	
+			},
 		// == MIDI Message Helpers
 		// ---- Channel Voice Messages
 		isNoteOn: 
