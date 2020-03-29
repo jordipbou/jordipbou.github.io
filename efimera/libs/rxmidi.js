@@ -309,6 +309,9 @@
 			s => pipe(map(d => { d.state = { ...s }; return d })),
 		saveState:
 			s => pipe(map(d => { s = { ...d.state }; return d })),
+		// Other utilities
+		midiToHz:
+			(n, tuning = 440) => ((tuning / 32) * (Math.pow(((n - 9) / 12), 2))),
 	}
 
 	let _global = 

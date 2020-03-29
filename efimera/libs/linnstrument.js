@@ -41,6 +41,42 @@
 
 			return r
 		},
+		linnState: () => {
+			let cells = []
+			let prevCells = []
+			for (let i = 0; i <=16; i++) {
+				cells.push([0, 0, 0, 0, 0, 0, 0, 0])
+				prevCells.push([0, 0, 0, 0, 0, 0, 0, 0])
+			}
+
+			let state = {
+				prevCells: prevCells,
+				cells: cells,
+				clear: () => {
+					for (let i = 0; i <= 16; i++) {
+						for (let j = 0; j < 8; j++) {
+							state.cells[i][j] = 0
+						}
+					}
+				},
+				commit: () => {
+					let msgs = []
+
+					for (let i = 0; i <= 16; i++) {
+						for (let j = 0; j < 8; j++) {
+							if (cells[i][j] !== prevCells[i][j]) {
+								msgs = msgs.concat(setCellColor(i, j, cells[i][j]))
+								prevCells[i][j] = cells[i][j]
+							}
+						}
+					}
+
+					return msgs
+				}
+			}
+			
+			return state
+		}
 		// TODO: Add utilities for working with zones (rectangles)
 		// like filtering, drawing, drawbars, etc.
 	}
