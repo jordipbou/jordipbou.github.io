@@ -36,7 +36,7 @@
 		midiAccess: {},
 		// == Initialization ==============================
 		init: 
-			(sysex = false) => {
+			(sysex = false) => 
 				navigator
 					.requestMIDIAccess({ sysex: sysex })
 					.then(m => {
@@ -46,8 +46,7 @@
 							v.onmidimessage = 
 								d => v.subject.next(d)
 						}
-					})
-			},
+					}),
 		// == Inputs and outputs ==========================
 		logPorts: 
 			() => {
