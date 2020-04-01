@@ -307,7 +307,12 @@
 		combineState:
 			s => pipe(map(d => { d.state = { ...s }; return d })),
 		saveState:
-			s => pipe(map(d => { s = { ...d.state }; return d })),
+			s => pipe(map(d => { 
+				//s = { ...d.state }; return d 
+				for (let p in s) {
+					s[p] = d.state[p]
+				}
+			})),
 		// Other utilities
 		midiToHz:
 			(n, tuning = 440) => ((tuning / 32) * (Math.pow(((n - 9) / 12), 2))),

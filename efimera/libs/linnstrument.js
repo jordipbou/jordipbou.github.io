@@ -76,7 +76,15 @@
 			}
 			
 			return state
+		},
+		getCoords: a => {
+			if (isNoteOn(a)) {
+				return [a.data[1], (a.data[0] & 0xF)]
+			} else {
+				return [null, null]
+			}
 		}
+
 		// TODO: Add utilities for working with zones (rectangles)
 		// like filtering, drawing, drawbars, etc.
 	}
