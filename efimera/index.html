@@ -9,7 +9,7 @@
 	<link rel=icon type=image/png href=./favicon.png>
 	<link rel=stylesheet href=./build/bundle.css>
 
-	<script defer src=./build/bundle.js></script>
+	<script defer type=module src=./build/bundle.js></script>
 	<script>
 		window.pikaImport = (pkg, ns, d = false) => {
 			if (ns === undefined) ns = pkg;
@@ -31,20 +31,43 @@
 			return p
 		}
 	</script>
-	<script defer src=./libs/all-around-keyboard.min.js></script>
-	<script defer src=./libs/rxjs/bundles/rxjs.umd.min.js></script>
 	<script defer type=module src=./libs/midi-parser-js/src/main.js></script>
 	<script defer type=module>
-		// Make everything of rxjs, RxMidi and of LinnStrument
+		// Make everything of rxjs, flyd, RMidi and of LinnStrument
 		// directly accesible in global namespace
-		for (let p in efimera.RxMidi) 
-			window[p] = efimera.RxMidi[p]
+		for (let p in efimera.RMidi) 
+			window[p] = efimera.RMidi[p]
+
+		for (let p in efimera.RMidiClock) 
+			window[p] = efimera.RMidiClock[p]
+
+		for (let p in efimera.RMidiFile) 
+			window[p] = efimera.RMidiFile[p]
 
 		for (let p in efimera.LinnStrumentJS)
 			window[p] = efimera.LinnStrumentJS[p]
 
-		for (let p in efimera.RxSequencer)
-			window[p] = efimera.RxSequencer[p]
+		for (let p in efimera.RMusic) 
+			window[p] = efimera.RMusic[p]
+
+		for (let p in efimera.RMusic_Defs) 
+			window[p] = efimera.RMusic_Defs[p]
+
+		//window.R = efimera.ramda
+		for (let p in efimera.ramda)
+			window [p] = efimera.ramda [p]
+
+		window.Tone = efimera.tone.default
+
+		window.rx = efimera.rxjs
+		window.rxo = efimera.rxjs_operators
+
+		window.setGlobal = name => v => window[name] = v
+
+		//window.rxs = efimera.rxjs_spy
+		//window.rxso = efimera.rxjs_spy.operators
+
+		//window.spy = efimera.spy
 	</script>
 </head>
 <body>
