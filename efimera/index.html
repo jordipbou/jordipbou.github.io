@@ -7,69 +7,10 @@
 	<title>Efimera - JS Live Coding Environment</title>
 
 	<link rel=icon type=image/png href=./favicon.png>
-	<link rel=stylesheet href=./build/bundle.css>
-
-	<script defer type=module src=./build/bundle.js></script>
-	<script>
-		window.pikaImport = (pkg, ns, d = false) => {
-			if (ns === undefined) ns = pkg;
-
-			let p =
-				import('https://cdn.pika.dev/' + pkg)
-					.then(m => window[ns] = d ? m.default : m)
-
-			return p
-		}
-
-		window.unpkgImport = (pkg, ns, d = false) => {
-			if (ns === undefined) ns = pkg;
-
-			let p = 
-				import('https://unpkg.com/' + pkg)
-					.then(m => window[ns] = d ? m.default : m)
-
-			return p
-		}
-	</script>
-	<script defer type=module src=./libs/midi-parser-js/src/main.js></script>
-	<script defer type=module>
-		// Make everything of rxjs, flyd, RMidi and of LinnStrument
-		// directly accesible in global namespace
-		for (let p in efimera.RMidi) 
-			window[p] = efimera.RMidi[p]
-
-		for (let p in efimera.RMidiClock) 
-			window[p] = efimera.RMidiClock[p]
-
-		for (let p in efimera.RMidiFile) 
-			window[p] = efimera.RMidiFile[p]
-
-		for (let p in efimera.LinnStrumentJS)
-			window[p] = efimera.LinnStrumentJS[p]
-
-		for (let p in efimera.RMusic) 
-			window[p] = efimera.RMusic[p]
-
-		for (let p in efimera.RMusic_Defs) 
-			window[p] = efimera.RMusic_Defs[p]
-
-		//window.R = efimera.ramda
-		for (let p in efimera.ramda)
-			window [p] = efimera.ramda [p]
-
-		window.Tone = efimera.tone.default
-
-		window.rx = efimera.rxjs
-		window.rxo = efimera.rxjs_operators
-
-		window.setGlobal = name => v => window[name] = v
-
-		//window.rxs = efimera.rxjs_spy
-		//window.rxso = efimera.rxjs_spy.operators
-
-		//window.spy = efimera.spy
-	</script>
+	<link rel=stylesheet href=./bundle.css>
+  <script defer type=module src=./bundle.js></script>
 </head>
 <body>
+  <e-session></e-session>
 </body>
 </html>
