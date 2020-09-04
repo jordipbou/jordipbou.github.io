@@ -68,6 +68,27 @@ e-term { display: block;
          width: 100%;
 		 height: 100%; }
 
+.info-bars { width: 100%;
+             position: absolute;
+			 bottom: 0px;
+			 left: 0px;
+			 display: flex;
+			 flex-direction: column; }
+
+e-completions { width: 100%;
+                background: var(--autocompletions-background);
+                color: var(--autocompletions-color);
+                overflow-x: hidden;
+                text-overflow: ellipsis; }
+
+.completion { margin-left: 5px;
+              margin-right: 5px; }
+
+e-error { display: block;
+          width: 100%; 
+		  background: var(--red);
+		  color: var(--base03); }
+
 e-input { display: block;
           width: 100%; }
 

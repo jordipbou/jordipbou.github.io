@@ -3820,6 +3820,81 @@
   });
 
   /**
+   * Returns whether or not a path exists in an object. Only the object's
+   * own properties are checked.
+   *
+   * @func
+   * @memberOf R
+   * @since v0.26.0
+   * @category Object
+   * @typedefn Idx = String | Int
+   * @sig [Idx] -> {a} -> Boolean
+   * @param {Array} path The path to use.
+   * @param {Object} obj The object to check the path in.
+   * @return {Boolean} Whether the path exists.
+   * @see R.has
+   * @example
+   *
+   *      R.hasPath(['a', 'b'], {a: {b: 2}});         // => true
+   *      R.hasPath(['a', 'b'], {a: {b: undefined}}); // => true
+   *      R.hasPath(['a', 'b'], {a: {c: 2}});         // => false
+   *      R.hasPath(['a', 'b'], {});                  // => false
+   */
+
+  var hasPath =
+  /*#__PURE__*/
+  _curry2(function hasPath(_path, obj) {
+    if (_path.length === 0 || isNil(obj)) {
+      return false;
+    }
+
+    var val = obj;
+    var idx = 0;
+
+    while (idx < _path.length) {
+      if (!isNil(val) && _has(_path[idx], val)) {
+        val = val[_path[idx]];
+        idx += 1;
+      } else {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  /**
+   * Returns whether or not an object has an own property with the specified name
+   *
+   * @func
+   * @memberOf R
+   * @since v0.7.0
+   * @category Object
+   * @sig s -> {s: x} -> Boolean
+   * @param {String} prop The name of the property to check for.
+   * @param {Object} obj The object to query.
+   * @return {Boolean} Whether the property exists.
+   * @example
+   *
+   *      const hasName = R.has('name');
+   *      hasName({name: 'alice'});   //=> true
+   *      hasName({name: 'bob'});     //=> true
+   *      hasName({});                //=> false
+   *
+   *      const point = {x: 0, y: 0};
+   *      const pointHas = R.has(R.__, point);
+   *      pointHas('x');  //=> true
+   *      pointHas('y');  //=> true
+   *      pointHas('z');  //=> false
+   */
+
+  var has =
+  /*#__PURE__*/
+  _curry2(function has(prop, obj) {
+    return hasPath([prop], obj);
+  });
+
+  /**
    * Returns `true` if the specified value is equal, in [`R.equals`](#equals)
    * terms, to at least one element of the given list; `false` otherwise.
    * Works also with strings.
@@ -4255,6 +4330,16 @@
         is (Function, render) ? 
           render ().querySelector (query) 
           : null;
+
+  const onCloseDialog = (host) => (evt) =>
+    dispatch (host, 
+              'refocus', 
+              { bubbles: true, composed: true });
+
+  const setOnCloseListener = (host) => (dialog) => {
+    dialog.removeEventListener ('close', onCloseDialog (host));
+    dialog.addEventListener ('close', onCloseDialog (host));
+  };
 
   // A block is a single/multiline text with editing capabilities.
 
@@ -4849,7 +4934,7 @@
 
   // Checks if an object has a property.
 
-  function has(obj, propName) {
+  function has$1(obj, propName) {
     return hasOwnProperty.call(obj, propName)
   }
 
@@ -4992,7 +5077,7 @@
     var options = {};
 
     for (var opt in defaultOptions)
-      { options[opt] = opts && has(opts, opt) ? opts[opt] : defaultOptions[opt]; }
+      { options[opt] = opts && has$1(opts, opt) ? opts[opt] : defaultOptions[opt]; }
 
     if (options.ecmaVersion >= 2015)
       { options.ecmaVersion -= 2009; }
@@ -6071,7 +6156,7 @@
 
   pp$1.checkExport = function(exports, name, pos) {
     if (!exports) { return }
-    if (has(exports, name))
+    if (has$1(exports, name))
       { this.raiseRecoverable(pos, "Duplicate export '" + name + "'"); }
     exports[name] = true;
   };
@@ -6417,7 +6502,7 @@
       if (this.strict && this.reservedWordsStrictBind.test(expr.name))
         { this.raiseRecoverable(expr.start, (bindingType ? "Binding " : "Assigning to ") + expr.name + " in strict mode"); }
       if (checkClashes) {
-        if (has(checkClashes, expr.name))
+        if (has$1(checkClashes, expr.name))
           { this.raiseRecoverable(expr.start, "Argument name clash"); }
         checkClashes[expr.name] = true;
       }
@@ -8650,7 +8735,7 @@
     return false
   };
   pp$8.regexp_validateUnicodePropertyNameAndValue = function(state, name, value) {
-    if (!has(state.unicodeProperties.nonBinary, name))
+    if (!has$1(state.unicodeProperties.nonBinary, name))
       { state.raise("Invalid property name"); }
     if (!state.unicodeProperties.nonBinary[name].test(value))
       { state.raise("Invalid property value"); }
@@ -9763,10 +9848,18 @@
         .replace (regex02, subst02)
         .replace (regex03, subst03);
 
+  // ------------------------------------------------------------- Show help
+  const regex001 = /^\.help$/;
+  const subst001 = "efimera.showHelpDialog (document.querySelector ('e-session').help_dialog)";
+
+  const replaceReplInstructions = (line) =>
+    line.replace (regex001, subst001);
+
   const applyReplacements = 
     map$1 (
       pipe (replaceImports,
-            replaceEfimeraObjects));
+            replaceEfimeraObjects,
+            replaceReplInstructions));
 
   // ----------------------- Check if code is evaluable --------------------
   // It's used on block listener to know if enter means evaluate or
@@ -9785,12 +9878,24 @@
 
   // ---------------------------- Code evaluation --------------------------
 
-  const evaluate_code = (code) => {
+  const evaluate_code = (host) => (code) => {
     let modified = applyReplacements (code);
 
     let strcode = join ('\n') (modified);
 
-    return window.eval (strcode)
+    try {
+      let result = window.eval (strcode);
+      dispatch (host, 'error', { detail: { noerror: true }, 
+                                 bubbles: true, 
+                                 composed: true });
+      return result
+    } catch (e) {
+      console.error (e);
+      dispatch (host, 'error', { detail: e, 
+                                 bubbles: true, 
+                                 composed: true });
+      return undefined
+    }
   };
 
   const update$1 = (host) => (detail) =>
@@ -9820,7 +9925,7 @@
         if (evt.shiftKey || !do_evaluate) {
           update$1 (host) (insertLine (host.block));
         } else if (!equals (host.block.lines, [''])) {
-          let result = evaluate_code (host.block.lines);
+          let result = evaluate_code (host) (host.block.lines);
           dispatch (host, 
                     'blockevaluated', 
                     { detail: result, 
@@ -9855,8 +9960,18 @@
         }
       } else if ((evt.key === 's' || evt.key === 'S') && evt.ctrlKey) {
         dispatch (host, 'save', { bubbles: true, composed: true });
-      } else if ((evt.key === 'l' || evt.key === 'L') && evt.ctrlKey) {
+      } else if ((evt.key === 'o' || evt.key === 'O') && evt.ctrlKey) {
         dispatch (host, 'load', { bubbles: true, composed: true });
+      } else if ((evt.key === 'l' || evt.key === 'L')) {
+        if (evt.ctrlKey) {
+          console.clear ();
+          dispatch (host, 'error', { detail: { noerror: true },
+                                     bubbles: true,
+                                     composed: true });
+        }
+        if (evt.shiftKey) {
+          dispatch (host, 'cleardocument', { bubbles: true, composed: true });
+        }
       } else {
         return true
       }
@@ -10178,40 +10293,33 @@
             head (s1) + longestCommonSubstring (tail (s1)) (tail (s2))
             : '';
 
-  const styles$3 = `
-:host { width: 100%;
-        position: absolute;
-        bottom: 0px;
-        left: 0px; 
-        background: var(--autocompletions-background);
-        color: var(--autocompletions-color);
-        overflow-x: hidden;
-        text-overflow: ellipsis; }
-.completion { margin-left: 5px;
-              margin-right: 5px; }
-`;
-
   const autocompletionItem = (completion) =>
     html`<span class="completion">${ completion }</span>`;
 
   const AutocompletionView = {
     completions: [],
-    render: ({ completions }) => html`
+    render: render(({ completions }) => html`
     ${ map$1 (autocompletionItem) (completions) }
-  `.style (styles$3)
+  `, { shadowRoot: false })
   };
 
   const moreInfo = (host, evt) =>
-    console.log ('show more info!');
+    dispatch (host, 'help', { bubbles: true, composed: true });
 
   const WelcomeBlockView = {
     render: () => html`
     <div class="welcome">
-      <div class="line">Welcome to Efimera v1.0.1</div>
-      <div class="line">Type ".help" of press <a href="#" onclick=${moreInfo}>here</a> for more information.</div>
+      <div class="line">Welcome to Efimera v1.0.2</div>
+      <div class="line">Type ".help" or press <a href="#" onclick=${moreInfo}>here</a> for more information.</div>
     </div>
   `
   };
+
+  const ErrorView = {
+    error: property(null),
+    render: render(({ error }) => html`
+    ${ error && !has ('noerror') (error) ? error.toString () : '' }
+  `, { shadowRoot: false })};
 
   // ---------------- Block modification / Autocompletion ------------------
 
@@ -10276,6 +10384,14 @@
                                             (host.doc.blocks [idx]))
                               (host.doc));
 
+  // ----------------------- Manage evaluation errors ----------------------
+
+  const onError = (host, evt) =>
+    host.error = evt.detail;
+
+  const clearDocument = (host, evt) =>
+    host.doc = createDocument ();
+
   const TermView = {
     doc: { 
       connect: (host, key, invalidate) => { 
@@ -10288,7 +10404,8 @@
     },
     results: [undefined],
     completions: [],
-    render: render(({ doc, completions, results }) => html`
+    error: property(null),
+    render: render(({ doc, completions, results, error }) => html`
     <e-welcome></e-welcome>
     ${addIndex (map$1) 
                ((b, idx) => 
@@ -10300,27 +10417,26 @@
                              onblockevaluated=${blockEvaluated (idx)}
                              onblocktop=${blockTop}
                              onblockbottom=${blockBottom}
+                             onerror=${ onError }
+                             oncleardocument=${ clearDocument }
                              focused=${doc.focused === idx}
                              result=${results [idx]}>
                     </e-block>`) 
                (doc.blocks)}
-    <e-completions completions=${ completions }></e-completions>
+    <div class="info-bars">
+      <e-error error=${ error }></e-error>
+      <e-completions completions=${ completions }></e-completions>
+    </div>
   `.define ({ 
         EBlock: BlockView, 
         ECompletions: AutocompletionView,
-        EWelcome: WelcomeBlockView }),
+        EWelcome: WelcomeBlockView,
+        EError: ErrorView }),
     { shadowRoot: false })
   };
 
-  const onclose = (host) => (evt) =>
-    dispatch (host, 'refocus', { bubbles: true, composed: true });
-
   const showExportDialog = (json) => (host) => {
-    console.log (host);
-    host.dialog.removeEventListener ('close',
-                                     onclose (host));
-    host.dialog.addEventListener ('close',
-                                  onclose (host));
+    setOnCloseListener (host) (host.dialog);
     host.json = json;
     host.dialog.showModal ();
   };
@@ -10344,14 +10460,8 @@
   `, { shadowRoot: false })
   };
 
-  const onclose$1 = (host) => (evt) =>
-    dispatch (host, 'refocus', { bubbles: true, composed: true });
-
   const showImportDialog = (host) => {
-    host.dialog.removeEventListener ('close',
-                                     onclose$1 (host));
-    host.dialog.addEventListener ('close',
-                                  onclose$1 (host));
+    setOnCloseListener (host) (host.dialog);
     host.dialog.showModal ();
   };
 
@@ -10394,6 +10504,46 @@
   `, { shadowRoot: false })
   };
 
+  const showHelpDialog = (host) => {
+    setOnCloseListener (host) (host.dialog);
+    host.dialog.showModal ();
+  };
+
+  const HelpView = {
+    dialog: ref ('dialog'),
+    render: render(() => html`
+    <dialog>
+      <section>
+        <header>Introduction</header>
+        <p>
+          Efimera is a Javascript repl/live coding environment.
+        </p>
+      </section>
+      <section>
+        <header>Import packages from npm</header>
+        <p>
+          Importing ES6 packages directly from npm by using standard
+          import statements inside efimera is allowed.
+        </p>
+        <p>
+          Examples:
+        </p>
+        <pre>
+          > import * as R from 'ramda'
+          > R.head ([1, 2, 3])
+          1
+        </pre>
+        <pre>
+          > import { head, tail } from 'ramda'
+          > head ([1, 2, 3])
+          1
+          > tail ([1, 2, 3])
+          [Array] [2, 3]
+        </pre>
+      </section>
+    </dialog>
+  `, { shadowRoot: false })};
+
   // ------------------------ Save / Load session --------------------------
 
   const onSave = (host, evt) => {
@@ -10409,12 +10559,17 @@
     hideImportDialog (host.import_dialog);
   };
 
+  // ----------------------------- Show help -------------------------------
+
+  const onHelp = (host, evt) =>
+    showHelpDialog (host.help_dialog);
+
   // --------------------------- Refocus block -----------------------------
   // After closing one of the export/import modals, focus is returned
   // to currently 'focused' block to be able to type without touching the
   // mouse.
 
-  const refocus = (host, evt) => 
+  const refocus = (host, evt) =>
     termRefocus (host.term) (evt);
 
   // ---------------------------- Session View -----------------------------
@@ -10423,16 +10578,21 @@
     term: ref ('e-term'),
     export_dialog: ref ('e-export-json'),
     import_dialog: ref ('e-import-json'),
+    help_dialog: ref ('e-help'),
     render: render(() => html`
-    <e-term onsave=${ onSave } onload=${ onLoad }></e-term>
+    <e-term onsave=${ onSave } 
+            onload=${ onLoad } 
+            onhelp=${ onHelp }></e-term>
     <e-export-json onrefocus=${ refocus }></e-export-json>
     <e-import-json onimport=${ onImportJSON }
                    onrefocus=${ refocus }>
     </e-import-json>
+    <e-help onrefocus=${ refocus }></e-help>
   `.define ({
       ETerm: TermView,
       EExportJson: ExportJSONView,
-      EImportJson: ImportJSONView
+      EImportJson: ImportJSONView,
+      EHelp: HelpView
     }), { shadowRoot: false })
   };
 
@@ -10452,6 +10612,7 @@
   exports.renderCaretLine = renderCaretLine;
   exports.renderLine = renderLine;
   exports.renderLines = renderLines;
+  exports.showHelpDialog = showHelpDialog;
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
