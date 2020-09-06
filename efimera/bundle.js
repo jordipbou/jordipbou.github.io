@@ -9883,19 +9883,16 @@
 
     let strcode = join ('\n') (modified);
 
+    let result = ['ok', undefined, null];
     try {
-      let result = window.eval (strcode);
-      dispatch (host, 'error', { detail: { noerror: true }, 
-                                 bubbles: true, 
-                                 composed: true });
-      return result
+      result [1] = window.eval (strcode);
     } catch (e) {
+      result [0] = 'error';
+      result [2] = e;
       console.error (e);
-      dispatch (host, 'error', { detail: e, 
-                                 bubbles: true, 
-                                 composed: true });
-      return undefined
     }
+
+    return result
   };
 
   const update$1 = (host) => (detail) =>
@@ -9925,12 +9922,21 @@
         if (evt.shiftKey || !do_evaluate) {
           update$1 (host) (insertLine (host.block));
         } else if (!equals (host.block.lines, [''])) {
-          let result = evaluate_code (host) (host.block.lines);
-          dispatch (host, 
-                    'blockevaluated', 
-                    { detail: result, 
-                      bubbles: true, 
-                      composed: true });
+          let [st, result, e] = evaluate_code () (host.block.lines);
+          if (st === 'ok') {
+            dispatch (host, 'error', { detail: { noerror: true },
+                                       bubbles: true, 
+                                       composed: true });
+            dispatch (host, 
+                      'blockevaluated', 
+                      { detail: result, 
+                        bubbles: true, 
+                        composed: true });
+          } else {
+            dispatch (host, 'error', { detail: e,
+                                       bubbles: true, 
+                                       composed: true });
+          }
         }
       } else if (evt.key === 'ArrowLeft') {
         update$1 (host) (moveCursorLeft (host.block));
@@ -10309,7 +10315,7 @@
   const WelcomeBlockView = {
     render: () => html`
     <div class="welcome">
-      <div class="line">Welcome to Efimera v1.0.2</div>
+      <div class="line">Welcome to Efimera v1.0.3</div>
       <div class="line">Type ".help" or press <a href="#" onclick=${moreInfo}>here</a> for more information.</div>
     </div>
   `
