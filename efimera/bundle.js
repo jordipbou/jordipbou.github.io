@@ -9974,9 +9974,11 @@
           dispatch (host, 'error', { detail: { noerror: true },
                                      bubbles: true,
                                      composed: true });
-        }
-        if (evt.shiftKey) {
-          dispatch (host, 'cleardocument', { bubbles: true, composed: true });
+          if (evt.shiftKey) {
+            dispatch (host, 'cleardocument', { bubbles: true, composed: true });
+          }
+        } else {
+          return true
         }
       } else {
         return true
@@ -10315,7 +10317,7 @@
   const WelcomeBlockView = {
     render: () => html`
     <div class="welcome">
-      <div class="line">Welcome to Efimera v1.0.3</div>
+      <div class="line">Welcome to Efimera v1.0.4</div>
       <div class="line">Type ".help" or press <a href="#" onclick=${moreInfo}>here</a> for more information.</div>
     </div>
   `
