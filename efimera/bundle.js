@@ -11546,7 +11546,7 @@
   const WelcomeBlockView = {
     render: () => html`
     <div class="welcome">
-      <div class="line">Welcome to Efimera v1.0.9</div>
+      <div class="line">Welcome to Efimera v1.0.10</div>
       <div class="line">Type ".help" or press <a href="#" onclick=${moreInfo}>here</a> for more information.</div>
     </div>
   `
@@ -12471,9 +12471,35 @@
     host.dialog.close ();
   };
 
+  const formatLink = (json) =>
+    'https://jordipbou.github.com/efimera/?json=' + encodeURI (json);
+
   const copyLinkToClipboard = (host, evt) => {
-    navigator.clipboard.writeText ('https://jordipbou.github.com/efimera/?json=' + encodeURI (host.json));
+    navigator.clipboard.writeText (formatLink (host.json));
     host.dialog.close ();
+  };
+
+  const formatText = (blocks) =>
+      join ('\n')
+           (map$1 (join ('\n'))
+             (map$1 
+               (addIndex (map$1)
+                         ((l, i) => i === 0 ? '> ' + l : '… ' + l))
+               (map$1 (prop ('lines')) (blocks))));
+
+  const copyTextToClipboard = (host, evt) => {
+    let object = JSON.parse (host.json);
+    let text = formatText (object.blocks);
+    navigator.clipboard.writeText (text);
+  };
+
+  const copyTextAndLinkToClipboard = (host, evt) => {
+    let object = JSON.parse (host.json);
+    let text = formatText (object.blocks);
+    let link = formatLink (host.json);
+
+    navigator.clipboard.writeText (
+      text + '\n[Load on Efimera](' + link + ')');
   };
 
   const ExportJSONView = {
@@ -12491,6 +12517,8 @@
         <div>
           <button onclick=${ copyToClipboard }>Copy</button>
           <button onclick=${ copyLinkToClipboard }>Copy link</button>
+          <button onclick=${ copyTextToClipboard }>Only text</button>
+          <button onclick=${ copyTextAndLinkToClipboard }>Text and link</button>
         </div>
       </div>
       <div class="json-export-preview">${ json }</div>
