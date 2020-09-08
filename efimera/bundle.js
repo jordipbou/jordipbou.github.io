@@ -11026,6 +11026,8 @@
       return unpkgImport ('hybrids', ns)
     } else if (pkg === 'rxjs') {
       return skypackImport ('rxjs', ns)
+    } else if (pkg === 'rxjs/operators') {
+      return skypackImport ('rxjs/operators', ns)
     } else {
       return unpkgImport (pkg, ns)
     }
@@ -11038,7 +11040,7 @@
 
   // ------------------------------- import * as <namespace> from '<package>'
 
-  const regex2 = /import\s*\*\s*as\s*(?<namespace>[^\s*])\s*from\s*['|"](?<package>.*)['|"]/;
+  const regex2 = /import\s*\*\s*as\s*(?<namespace>[^\s]*)\s*from\s*['|"](?<package>.*)['|"]/;
   const subst2 = "efimera.npmImport ('$<package>', '$<namespace>')";
 
   // --------------------------------  import { <exports> } from '<package>'
@@ -11544,7 +11546,7 @@
   const WelcomeBlockView = {
     render: () => html`
     <div class="welcome">
-      <div class="line">Welcome to Efimera v1.0.8</div>
+      <div class="line">Welcome to Efimera v1.0.9</div>
       <div class="line">Type ".help" or press <a href="#" onclick=${moreInfo}>here</a> for more information.</div>
     </div>
   `
@@ -12470,7 +12472,7 @@
   };
 
   const copyLinkToClipboard = (host, evt) => {
-    navigator.clipboard.writeText ('https://jordipbou.github.com/efimera/?json=' + host.json);
+    navigator.clipboard.writeText ('https://jordipbou.github.com/efimera/?json=' + encodeURI (host.json));
     host.dialog.close ();
   };
 
