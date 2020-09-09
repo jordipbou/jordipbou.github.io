@@ -115,4 +115,29 @@ e-import-json textarea { width: 80vw; }
 
 e-import-json p { color: red }
 
+.line { min-height: 1em;
+        line-height: 1;
+        padding: 0em;
+        margin: 0em; }
+
+.line:focus { outline-style: none; }
+
+.caret { min-width: 0.5em;
+         animation: blink .75s step-end infinite; }
+
+@keyframes blink { from, to { background-color: var(--term-background-inverted); 
+                              color: var(--term-color-inverted); }
+                   50% { background-color: var(--term-background);
+                         color: var(--term-color); } }
+
+.autocompletion .caret { animation: auto-blink .75s step-end infinite; }
+
+@keyframes auto-blink { 
+  from, to { background-color: var(--term-background-inverted);
+             color: var(--autocompletion-color-inverted); }
+  50% { background-color: var(--term-background);
+        color: var(--autocompletion-color); } }
+
+.autocompletion { color: var(--autocompletion-color); }
+
 

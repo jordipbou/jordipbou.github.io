@@ -5802,34 +5802,6 @@
 
   // ----------------------- Input block rendering -------------------------
 
-  const styles = `
-.line { min-height: 1em;
-        line-height: 1;
-        padding: 0em;
-        margin: 0em; }
-
-.line:focus { outline-style: none; }
-
-.caret { min-width: 0.5em;
-         animation: blink .75s step-end infinite; }
-
-@keyframes blink { from, to { background-color: var(--term-background); 
-                              color: var(--term-color); }
-                   50% { background-color: var(--term-background-inverted);
-                         color: var(--term-color-inverted); } }
-
-.autocompletion .caret { animation: auto-blink .75s step-end infinite; }
-
-@keyframes auto-blink { 
-  from, to { background-color: var(--term-background);
-             color: var(--autocompletion-color); }
-  50% { background-color: var(--term-background-inverted);
-        color: var(--autocompletion-color-inverted); } }
-
-.autocompletion { color: var(--autocompletion-color); }
-
-`;
-
   const onclick = (idx) => (host, evt) => {
     let charwidth = host.render ().querySelector ('.line').clientHeight / 2;
     let x = Math.floor (evt.x / charwidth) - 2; // 2 for prompt size
@@ -5841,7 +5813,7 @@
   const createRenderer = () => ({
     render: (block, focused) => html`
     ${ renderLines (block, focused) }
-  `.style (styles)
+  `
   });
 
   // Reserved word lists for various dialects of the language
@@ -11251,7 +11223,7 @@
     { shadowRoot: false })
   };
 
-  const styles$1 = `
+  const styles = `
 .collapsed .expanded { display: none; }
 .expanded .collapsed { display: none; }
 .result { background: var(--result-background); }
@@ -11280,10 +11252,10 @@
   };
 
   const HTMLUndefined = () => html`
-  <div class="result pp-undefined"></div>`.style (styles$1);
+  <div class="result pp-undefined"></div>`.style (styles);
 
   const HTMLBoolean = (b) => html`
-  <span class="result pp-boolean">${b ? 'true' : 'false' }</span>`.style (styles$1);
+  <span class="result pp-boolean">${b ? 'true' : 'false' }</span>`.style (styles);
 
   const HTMLNumber = (n) => html`
   <span class="result pp-number expandable collapsed" 
@@ -11299,14 +11271,14 @@
       <span class="label binary">BIN</span>
       <span class="binary">${n.toString (2)}</span>
     </span>
-  </span>`.style (styles$1);
+  </span>`.style (styles);
 
   const HTMLString = (s) => html`
   <span class="result pp-string expandable collapsed" 
         onclick=${ toggle }>
     <span class="collapsed">"${s}"</span>
     <span class="expanded">"${s}"</span>
-  </span>`.style (styles$1);
+  </span>`.style (styles);
 
   const HTMLArrayElement = (last) => (e) => html`
   <span>${ toHTML (e) }${ !last ? `,` : `` }</span>`;
@@ -11318,7 +11290,7 @@
     ${ map$1 (HTMLArrayElement (false)) (init (a)) }
     ${ HTMLArrayElement (true) (last (a)) }
     <span class="">]</span>
-  </span>`.style (styles$1);
+  </span>`.style (styles);
 
   const HTMLPromise = (p) =>
     html.resolve(
@@ -11326,15 +11298,15 @@
               <span class="result pp-promise">
                 <span class="resolved">[[Resolved]]</span>
                 <span class="value">${ toHTML (value) }</span>
-              </span>`.style (styles$1))
+              </span>`.style (styles))
        .catch ((error) => html`
                <span class="result pp-promise">
                  <span class="rejected">[[Rejected]]</span>
                  <span class="error">${ toHTML (error) }</span>
-               </span>`.style (styles$1)),
+               </span>`.style (styles)),
       html`<span class="result pp-promise">
            <span class="pending">[[Pending]]</span>
-         </span>`.style (styles$1));
+         </span>`.style (styles));
 
 
   const HTMLObjectProperty = (last) => (p) => (v) => html`
@@ -11357,7 +11329,7 @@
       ${ HTMLObjectProperty (true) (last (keys (o))) (o[last (keys (o))]) }
     </span>
     <span class="">}</span>
-  </span>`.style (styles$1);
+  </span>`.style (styles);
 
   const toHTML = 
     cond ([
@@ -11378,12 +11350,12 @@
       { shadowRoot: false })
   };
 
-  const styles$2 = `
+  const styles$1 = `
 :host { display: block; }
 `;
 
   const RenderView = {
-    render: render((host) => html``.style (styles$2), { shadowRoot: false })
+    render: render((host) => html``.style (styles$1), { shadowRoot: false })
   };
 
   const inputRefocus = (host) => {
@@ -11546,7 +11518,7 @@
   const WelcomeBlockView = {
     render: () => html`
     <div class="welcome">
-      <div class="line">Welcome to Efimera v1.0.10</div>
+      <div class="line">Welcome to Efimera v1.0.11</div>
       <div class="line">Type ".help" or press <a href="#" onclick=${moreInfo}>here</a> for more information.</div>
     </div>
   `
