@@ -5061,33 +5061,6 @@
   });
 
   /**
-   * Returns `true` if the specified value is equal, in [`R.equals`](#equals)
-   * terms, to at least one element of the given list; `false` otherwise.
-   * Works also with strings.
-   *
-   * @func
-   * @memberOf R
-   * @since v0.26.0
-   * @category List
-   * @sig a -> [a] -> Boolean
-   * @param {Object} a The item to compare against.
-   * @param {Array} list The array to consider.
-   * @return {Boolean} `true` if an equivalent item is in the list, `false` otherwise.
-   * @see R.any
-   * @example
-   *
-   *      R.includes(3, [1, 2, 3]); //=> true
-   *      R.includes(4, [1, 2, 3]); //=> false
-   *      R.includes({ name: 'Fred' }, [{ name: 'Fred' }]); //=> true
-   *      R.includes([42], [[42]]); //=> true
-   *      R.includes('ba', 'banana'); //=>true
-   */
-
-  var includes =
-  /*#__PURE__*/
-  _curry2(_includes);
-
-  /**
    * Returns all but the last element of the given list or string.
    *
    * @func
@@ -5496,6 +5469,9 @@
         is (Function, render) ? 
           render ().querySelector (query) 
           : null;
+
+  const noShadow = (r) => render(r, { shadowRoot: false });
+    
 
   const onCloseDialog = (host) => (evt) =>
     dispatch (host, 
@@ -11179,21 +11155,30 @@
 
         if (evt.shiftKey || !do_evaluate) {
           update$1 (host) (insertLine (host.block));
-        } else if (!equals (host.block.lines, [''])) {
-          let [st, result, e] = evaluate_code () (host.block.lines);
-          if (st === 'ok') {
-            dispatch (host, 'error', { detail: { noerror: true },
-                                       bubbles: true, 
-                                       composed: true });
-            dispatch (host, 
-                      'blockevaluated', 
-                      { detail: result, 
-                        bubbles: true, 
-                        composed: true });
+        } else {
+          if (!equals (host.block.lines, [''])) {
+            let [st, result, e] = evaluate_code () (host.block.lines);
+            if (st === 'ok') {
+              dispatch (host, 'error', { detail: { noerror: true },
+                                         bubbles: true, 
+                                         composed: true });
+              dispatch (host, 
+                        'blockevaluated', 
+                        { detail: result, 
+                          bubbles: true, 
+                          composed: true });
+            } else {
+              dispatch (host, 'error', { detail: e,
+                                         bubbles: true, 
+                                         composed: true });
+            }
           } else {
-            dispatch (host, 'error', { detail: e,
-                                       bubbles: true, 
+            dispatch (host, 'error', { detail: { noerror: true },
+                                       bubbles: true,
                                        composed: true });
+            dispatch (host, 'blockevaluated', { detail: undefined,
+                                                bubbles: true,
+                                                composed: true });
           }
         }
       } else if (evt.key === 'ArrowLeft') {
@@ -11280,139 +11265,286 @@
     { shadowRoot: false })
   };
 
-  const styles = `
-.collapsed .expanded { display: none; }
-.expanded .collapsed { display: none; }
-.result { background: var(--result-background); }
-.pp-undefined { }
-.pp-number { color: var(--result-number-color); }
-.pp-string { color: var(--result-string-color); }
-.pp-boolean { color: var(--result-boolean-color); }
-`;
+  // Objects have three possible states:
 
-  const toggle = (host, evt) => {
-    let e = 
-      head 
-        (filter 
-          ((e) => e.classList ? 
-                    includes ('expandable') (e.classList) 
-                    : false)
-          (evt.path));
+  // ----------------------------------------------------- On click callback
 
-    e.classList = 
-      join (' ')
-        (includes ('collapsed') (e.classList) ?
-          append ('expanded') 
-                 (without ('collapsed') (e.classList))
-          : append ('collapsed')  
-                   (without ('expanded') (e.classList)));
+  const noClick = (host, evt) => {
+    if (evt.cancelBubble !== null) evt.cancelBubble = true;
+    dispatch (host, 'refocus', { bubbles: true, composed: true });
+    evt.preventDefault ();
+    return false
   };
 
-  const HTMLUndefined = () => html`
-  <div class="result pp-undefined"></div>`.style (styles);
+  const expandTag = (host, evt) => {
+    host._expanded = true;
+    host._hasExpanded = true;
+    if (evt.cancelBubble !== null) evt.cancelBubble = true;
+    dispatch (host, 'refocus', { bubbles: true, composed: true });
+    evt.preventDefault ();
+    return false
+  };
 
-  const HTMLBoolean = (b) => html`
-  <span class="result pp-boolean">${b ? 'true' : 'false' }</span>`.style (styles);
+  const collapseTag = (host, evt) => {
+    host._expanded = false;
+    if (evt.cancelBubble !== null) evt.cancelBubble = true;
+    dispatch (host, 'refocus', { bubbles: true, composed: true });
+    evt.preventDefault ();
+    return false
+  };
 
-  const HTMLNumber = (n) => html`
-  <span class="result pp-number expandable collapsed" 
-        onclick=${ toggle }>
-    <span class="collapsed">
-      <span class="decimal">${n}</span>
+  // --------------------------------------------------------- HTML Elements
+
+  const HTMLBaseElement = (value) =>
+    ({ value: value,
+       full_line: true,
+       _expanded: false,
+       _hasExpanded: false });
+
+  const ContainerClasses = (full_line) => (expanded) =>
+    ({ 'pp-container': true,
+       'condensed': !full_line,
+       'collapsed': full_line && !expanded,
+       'expanded': full_line && expanded });
+
+  // Undefined
+
+  const HTMLUndefinedTag = (full_line) =>
+    html`<e-undefined class="result pp-undefined"
+                    full_line="${ full_line }">
+       </e-undefined>`;
+
+  const HTMLUndefined = {
+    ...HTMLBaseElement (undefined),
+    render: noShadow(({ full_line, _expanded }) => html`
+    <span class="${ ContainerClasses (full_line) (_expanded) }">
+      ${ !full_line && html`
+        <span class="condensed">undefined</span>`}
+      ${ full_line && html`
+        <span class="collapsed" onclick="${ noClick }">undefined</span>`}
     </span>
-    <span class="expanded">
-      <span class="label decimal">DEC</span>
-      <span class="decimal">${n}</span>
-      <span class="label hexadecimal">HEX</span>
-      <span class="hexadecimal">${n.toString (16)}</span>
-      <span class="label binary">BIN</span>
-      <span class="binary">${n.toString (2)}</span>
+  `)};
+
+  // Boolean
+
+  const HTMLBooleanTag = (full_line) => (value) =>
+    html`<e-boolean class="result pp-boolean" 
+                  full_line="${ full_line }"
+                  value="${ value }">
+       </e-boolean>`;
+
+  const HTMLBoolean = {
+    ...HTMLBaseElement (true),
+    render: noShadow(({ value, full_line, _expanded }) => html`
+    <span class="${ ContainerClasses (full_line) (_expanded) }">
+      ${ !full_line && html`
+        <span class="condensed">
+          ${ value ? 'true' : 'false' }
+        </span>`}
+      ${ full_line && html`
+        <span class="collapsed" onclick="${ noClick }">
+          ${ value ? 'true' : 'false' }
+        </span>`}
+      </span>
     </span>
-  </span>`.style (styles);
+  `)};
 
-  const HTMLString = (s) => html`
-  <span class="result pp-string expandable collapsed" 
-        onclick=${ toggle }>
-    <span class="collapsed">"${s}"</span>
-    <span class="expanded">"${s}"</span>
-  </span>`.style (styles);
+  // Number
 
-  const HTMLArrayElement = (last) => (e) => html`
-  <span>${ toHTML (e) }${ !last ? `,` : `` }</span>`;
+  const HTMLNumberTag = (full_line) => (value) =>
+    html`<e-number class="result pp-number" 
+                 full_line="${ full_line }"
+                 value="${ value }">
+       </e-number`;
 
-  const HTMLArray = (a) => html`
-  <span class="result pp-array">
-    <span class="">[Array]</span>
-    <span class="">[</span>
-    ${ map$1 (HTMLArrayElement (false)) (init (a)) }
-    ${ HTMLArrayElement (true) (last (a)) }
-    <span class="">]</span>
-  </span>`.style (styles);
-
-  const HTMLPromise = (p) =>
-    html.resolve(
-      p.then ((value) => html`
-              <span class="result pp-promise">
-                <span class="resolved">[[Resolved]]</span>
-                <span class="value">${ toHTML (value) }</span>
-              </span>`.style (styles))
-       .catch ((error) => html`
-               <span class="result pp-promise">
-                 <span class="rejected">[[Rejected]]</span>
-                 <span class="error">${ toHTML (error) }</span>
-               </span>`.style (styles)),
-      html`<span class="result pp-promise">
-           <span class="pending">[[Pending]]</span>
-         </span>`.style (styles));
-
-
-  const HTMLObjectProperty = (last) => (p) => (v) => html`
-  <span class="pp-object-property">
-    <span class="pp-object-property-name">${ p }</span>
-    <span>:</span>
-    <span class="pp-object-property-value">${ toHTML (v) }</span>
-    ${ !last ? `,` : `` }
-  </span>`;
-
-  const HTMLObject = (o) => html`
-  <span class="result pp-object">
-    <span class="">
-      <span class="">[Object]</span>
-      <span class="">{</span>
+  const HTMLNumber = {
+    ...HTMLBaseElement (0),
+    render: noShadow (({value, full_line, _expanded, _hasExpanded}) => html`
+    <span class="${ ContainerClasses (full_line) (_expanded) }">
+      ${ !full_line && html`
+        <span class="condensed">
+          ${ value }
+        </span>`}
+      ${ (full_line && !_expanded) && html`
+        <span class="collapsed" onclick="${ expandTag }">
+          ${ value }
+        </span>`}
+      ${ (full_line && _expanded) && html`
+      <span class="expanded" onclick="${ collapseTag }">
+        <span class="label decimal">DEC</span>
+        <span class="decimal">${ value }</span>
+        <span class="label hexadecimal">HEX</span>
+        <span class="hexadecimal">${ value.toString (16) }</span>
+        <span class="label binary">BIN</span>
+        <span class="binary">${ value.toString (2) }</span>
+      </span>`}
     </span>
-    <span class="">
-      ${ map$1 ((k) => HTMLObjectProperty (false) (k) (o[k])) 
-             (init (keys (o))) }
-      ${ HTMLObjectProperty (true) (last (keys (o))) (o[last (keys (o))]) }
-    </span>
-    <span class="">}</span>
-  </span>`.style (styles);
+  `)};
 
-  const toHTML = 
+  // String
+
+  const HTMLStringTag = (full_line) => (value) =>
+    html`<e-string class="result pp-string"
+                 full_line="${ full_line }"
+                 value="${ value }">
+       </e-string>`;
+
+  const HTMLString = {
+    ...HTMLBaseElement (''),
+    render: noShadow (({value, full_line, _expanded, _hasExpanded }) => html`
+    <span class="${ ContainerClasses (full_line) (_expanded) }">
+      ${ !full_line && html`
+        <span class="condensed">
+          "${ value }"
+        </span>`}
+      ${ full_line && !_expanded && html`
+        <span class="collapsed" onclick="${ expandTag }">
+          "${ value }"
+        </span>`}
+      ${ full_line && _expanded && html`
+        <span class="expanded" onclick="${ collapseTag }">
+          "${ value }"
+        </span>`}
+    </span>
+  `)};
+
+  // Array
+
+  const HTMLArrayTag = (full_line) => (value) =>
+    html`<e-array class="result pp-array"
+                full_line="${ full_line }"
+                value="${ value }">
+       </e-array>`;
+
+  const HTMLArray = {
+    ...HTMLBaseElement ([]),
+    render: noShadow (({value, full_line, _expanded, _hasExpanded}) => html`
+    <span class="${ ContainerClasses (full_line) (_expanded) }">
+      ${ !full_line && html`
+        <span class="condensed">
+          Array (${ length (value) })
+        </span>`}
+      ${ full_line && !_expanded && html`
+        <span class="collapsed" onclick="${ expandTag }">
+          Array (${ length (value) }) [
+          ${ map$1 ((i) => html`${ toBlocks (false) (i) },`) (value) }
+          ]
+        </span>`}
+      ${ ((full_line && _expanded) || _hasExpanded) && html`
+        <span class="expanded" onclick="${ collapseTag }">
+          <span class="pp-array-header">
+            Array (${ length (value) }) [
+          </span>
+          ${ addIndex 
+               (map$1)
+               ((i, idx) => html`
+                 <span class="pp-array-item">
+                   ${ idx }:${ toBlocks (true) (i) },
+                 </span>`)
+               (value) }
+          <span class="pp-array-footer">]</span>
+        </span>`}
+    </span>
+  `)};
+
+  // Promise
+
+  const HTMLPromiseTag = (full_line) => (value) =>
+    html`<e-promise class="result pp-promise"
+                  full_line="${ full_line }"
+                  value="${ value }">
+       </e-promise>`;
+
+  const HTMLPromise = {
+    ...HTMLBaseElement ({}),
+    render: noShadow (({value, full_line, _expanded, _hasExpanded}) => html`
+    ${ html.resolve (
+      value.then ((x) => html`[[Resolved]]`)
+           .catch ((e) => html`[[Rejected]]`),
+      html`[[Pending]]`)}`)};
+
+  // Object
+
+  const HTMLObjectTag = (full_line) => (value) =>
+    html`<e-object class="result pp-object"
+                 full_line="${ full_line }"
+                 value="${ value }">
+       </e-object>`;
+
+  const HTMLObject = {
+    ...HTMLBaseElement ({}),
+    render: noShadow (({value, full_line, _expanded, _hasExpanded}) => html`
+    <span class="${ ContainerClasses (full_line) (_expanded) }">
+      ${ !full_line && html`
+        <span class="condensed">{…}</span>
+      `}
+      ${ full_line && !_expanded && html`
+        <span class="collapsed" onclick="${ expandTag }">
+          {
+          ${ map$1 ((k) => html`
+                   <span class="pp-object-property">
+                     ${ k }:${ toBlocks (false) (value[k]) },
+                   </span>
+                 `)
+                 (keys (value)) }
+          }
+        </span>
+      `}
+      ${ full_line && _expanded && html`
+        <span class="expanded" onclick="${ collapseTag }">
+          <span class="pp-object-header">
+            {
+          </span>
+          ${ map$1 ((k) => html`
+                   <span class="pp-object-property">
+                     ${ k }:${ toBlocks (true) (value[k]) },
+                   </span>
+                 `)
+                 (keys (value)) }
+          <span class="pp-object-footer">
+            }
+          </span>
+        </span>
+      `}
+    </span>
+  `)};
+   
+  const toBlocks = (full_line) => (value) => 
     cond ([
-      [isNil,           HTMLUndefined],
-      [equals (true),   HTMLBoolean],
-      [equals (false),  HTMLBoolean],
-      [is (Number),     HTMLNumber],
-      [is (String),     HTMLString],
-      [is (Array),      HTMLArray],
-      [is (Promise),    HTMLPromise],
-      [is (Object),     HTMLObject],
-      [T,               always]]);
+      [isNil, always (HTMLUndefinedTag (full_line))],
+      [equals (true), always (HTMLBooleanTag (full_line) (true))],
+      [equals (false), always (HTMLBooleanTag (full_line) (false))],
+      [is (Number), always (HTMLNumberTag (full_line) (value))],
+      [is (String), always (HTMLStringTag (full_line) (value))],
+      [is (Array), always (HTMLArrayTag (full_line) (value))],
+      [is (Promise), always (HTMLPromiseTag (full_line) (value))],
+      [is (Object), always (HTMLObjectTag (full_line) (value))],
+    ]) (value);
+
+  const ResultDefines = {
+    EUndefined: HTMLUndefined,
+    EBoolean: HTMLBoolean,
+    ENumber: HTMLNumber,
+    EString: HTMLString,
+    EArray: HTMLArray,
+    EPromise: HTMLPromise,
+    EObject: HTMLObject,
+  };
 
   const OutputView = {
-    result: undefined,
-    render: render(
-      ({ result }) => html`${ toHTML (result) }`,
-      { shadowRoot: false })
+    result: { evaluated: false, value: undefined },
+    render: noShadow (
+      ({ result }) => 
+        html`${ result.evaluated && toBlocks (true) (result.value) }`
+          .define (ResultDefines))
   };
 
-  const styles$1 = `
+  const styles = `
 :host { display: block; }
 `;
 
   const RenderView = {
-    render: render((host) => html``.style (styles$1), { shadowRoot: false })
+    render: render((host) => html``.style (styles), { shadowRoot: false })
   };
 
   const inputRefocus = (host) => {
@@ -11421,7 +11553,7 @@
 
   const BlockView = {
     block: {},
-    result: undefined,
+    result: { evaluated: false, value: undefined },
     focused: false,
     input: ref ('e-input'),
     output: ref ('e-output'),
@@ -11575,7 +11707,7 @@
   const WelcomeBlockView = {
     render: () => html`
     <div class="welcome">
-      <div class="line">Welcome to Efimera v1.0.12</div>
+      <div class="line">Welcome to Efimera v1.0.13</div>
       <div class="line">Type ".help" or press <a href="#" onclick=${moreInfo}>here</a> for more information.</div>
     </div>
   `
@@ -11617,12 +11749,14 @@
   // ------------------------- Code evaluation -----------------------------
 
   const blockEvaluated = (idx) => (host, evt) => {
-    host.results = update (idx) (evt.detail) (host.results);
+    host.results = update (idx) 
+                          ({ evaluated: true, value: evt.detail }) 
+                          (host.results);
     if (idx === length (host.doc.blocks) - 1) {
       host.doc = appendBlock () (host.doc);
-      host.results = append (undefined) (host.results);
+      host.results = append ({ evaluated: false, value: undefined }) 
+                            (host.results);
       host.completions = [];
-      //focusLastBlock (host)
     }
   };
 
@@ -11668,10 +11802,12 @@
         return () => host.removeEventListener ('click', termRefocus (host))
       }
     },
-    results: [undefined],
+    results: [{ evaluated: false, value: undefined }],
     completions: [],
     error: property(null),
-    render: render(({ doc, completions, results, error }) => html`
+    render: noShadow ((host) => {
+      let { doc, completions, results, error } = host;
+      return html`
     <e-welcome></e-welcome>
     ${addIndex (map$1) 
                ((b, idx) => 
@@ -11685,6 +11821,7 @@
                              onblockbottom=${blockBottom}
                              onerror=${ onError }
                              oncleardocument=${ clearDocument }
+                             onrefocus=${ termRefocus (host) }
                              focused=${doc.focused === idx}
                              result=${results [idx]}>
                     </e-block>`) 
@@ -11697,9 +11834,7 @@
         EBlock: BlockView, 
         ECompletions: AutocompletionView,
         EWelcome: WelcomeBlockView,
-        EError: ErrorView }),
-    { shadowRoot: false })
-  };
+        EError: ErrorView })})};
 
   // nb. This is for IE10 and lower _only_.
   var supportCustomEvent = window.CustomEvent;

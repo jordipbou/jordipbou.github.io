@@ -42,10 +42,64 @@ src: local('monofur   italic'), url('monof56.woff') format('woff');
 	--autocompletions-background: var(--base02);
 	--autocompletions-color: var(--yellow);
 	--result-background: var(--base03);
-	--result-number-color: var(--base01);
-	--result-string-color: var(--green);
+	--result-undefined-line: var(--base02);
+	--result-undefined-color: var(--base01);
 	--result-boolean-color: var(--yellow);
+	--result-number-color: var(--yellow);
+	--result-string-color: var(--green);
 }
+
+/* ---------------------------------------------------- Pretty printing */
+
+.result > .condensed > .collapsed { display: none; }
+
+.result > .condensed > .condensed { display: inline-block; }
+
+.result > .condensed > .expanded { display: none; }
+
+.result > .collapsed > .condensed { display: none; }
+
+.result > .collapsed > .collapsed { display: block; }
+
+.result > .collapsed > .expanded { display: none; }
+
+.result > .expanded > .condensed { display: none; }
+
+.result > .expanded > .collapsed { display: none; }
+
+.result > .expanded > .expanded { display: block; }
+
+e-output > .pp-undefined { display: block; 
+                           height: 3px;
+						   width: 100%;
+					       background: var(--result-undefined-line); 
+						   font-size: 0em; }
+
+.pp-undefined { color: var(--result-undefined-color); }
+
+.pp-boolean { color: var(--result-boolean-color); }
+
+.pp-number { color: var(--result-number-color); }
+
+.pp-string { color: var(--result-string-color); }
+
+.pp-string > .collapsed > .collapsed { white-space: nowrap;
+									   display: block;
+									   overflow: hidden;
+						  			   text-overflow: ellipsis; 
+						  			   width: 100%; }
+
+.pp-array > .collapsed > .collapsed { overflow: hidden;
+                                      text-overflow: ellipsis;
+									  white-space: nowrap; }
+
+.pp-array > .collapsed > .collapsed > .result { display: inline-flex; }
+
+.pp-array > .expanded > .expanded { display: flex;
+                                    flex-direction: column; }
+
+.pp-array > .expanded > .expanded > .pp-array-item { display: flex; 
+                                                     padding-left: 1em; }
 
 html, body {
 	width: 100vw;
@@ -139,5 +193,3 @@ e-import-json p { color: red }
         color: var(--autocompletion-color); } }
 
 .autocompletion { color: var(--autocompletion-color); }
-
-
