@@ -101,6 +101,14 @@ e-output > .pp-undefined { display: block;
 .pp-array > .expanded > .expanded > .pp-array-item { display: flex; 
                                                      padding-left: 1em; }
 
+.pp-object > .expanded > .expanded { display: flex;
+                                     flex-direction: column; }
+
+.pp-object > .expanded > .expanded > .pp-object-property { 
+  display: flex;
+  padding-left: 1em;
+}
+
 html, body {
 	width: 100vw;
 	height: 100vh;
@@ -111,7 +119,7 @@ html, body {
 body {
 	background-color: var(--term-background);
 	color: var(--term-color);
-	font-family: 'monofur';
+	font-family: 'monofur', monospace;
 }
 
 e-session { display: block;
