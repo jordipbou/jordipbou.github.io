@@ -48,6 +48,7 @@ src: local('monofur   italic'), url('monof56.woff') format('woff');
 	--result-number-color: var(--yellow);
 	--result-string-color: var(--green);
 	--result-key-color: var(--base01);
+	--result-function-color: var(--violet);
 }
 
 /* ---------------------------------------------------- Pretty printing */
@@ -93,11 +94,15 @@ e-output > .pp-undefined { display: block;
 						  			    text-overflow: ellipsis; 
 						  			    width: 100%; }
 
+.pp-array-item > .pp-string > .collapsed > .collapsed {
+  width: calc(100% - 1em);
+}
+
 .pp-array > .collapsed > .collapsed { overflow: hidden;
                                       text-overflow: ellipsis;
 									  white-space: nowrap; }
 
-.pp-array > .collapsed > .collapsed > .result { display: inline-flex; }
+.pp-array > .collapsed > .collapsed > .result { display: inline; }
 
 .pp-array > .expanded > .expanded { display: block; }
 
@@ -107,7 +112,9 @@ e-output > .pp-undefined { display: block;
   width: calc(100% - 1em);
 }
 
-.pp-object > .collapsed > .collapsed { display: flex; }
+.pp-object > .collapsed > .collapsed { display: flex; 
+                                       white-space: nowrap;
+									   overflow: hidden; }
 
 .pp-object > .collapsed > .collapsed > .pp-object-property {
   display: flex;
@@ -122,6 +129,20 @@ e-output > .pp-undefined { display: block;
 }
 
 .pp-key { color: var(--result-key-color); }
+
+.pp-function { color: var(--result-function-color); }
+
+.pp-function > .collapsed > .collapsed  { white-space: nowrap;
+									    display: block;
+									    overflow: hidden;
+						  			    text-overflow: ellipsis; 
+						  			    width: 100%; }
+
+.pp-array-item > .pp-function > .collapsed > .collapsed {
+  width: calc(100% - 1em);
+}
+
+.pp-function > .expanded > .expanded > .pp-code { white-space: pre; }
 
 html, body {
 	width: 100vw;

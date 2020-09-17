@@ -11269,6 +11269,9 @@
 
   // ----------------------------------------------------- On click callback
 
+  // TODO: On click, set page scroll to click position (or
+  // around that object)
+
   const noClick = (host, evt) => {
     if (evt.cancelBubble !== null) evt.cancelBubble = true;
     dispatch (host, 'refocus', { bubbles: true, composed: true });
@@ -11438,7 +11441,9 @@
               <span class="pp-key">
                 ${ prefix }:
               </span>`}
-            '${ value }'
+            '${ length (value) < 11 ? 
+                  value
+                  : value.slice (0, 10) + '…' }'
           </span>`}
         ${ full_line && !_expanded && html`
           <span class="collapsed" onclick="${ expandTag }">
@@ -11607,7 +11612,7 @@
                 [[Pending]]
               </span>`}
             ${ full_line && !_expanded && html`
-              <span class="condensed" onclick="${ expandTag }">
+              <span class="collapsed" onclick="${ expandTag }">
                 ${ (prefix !== '') && html`
                   <span class="pp-key">
                     ${ prefix }:
@@ -11644,7 +11649,7 @@
               <span class="pp-key">
                 ${ prefix }:
               </span>`}
-            Object {…}
+            ${ value.constructor.name } {…}
           </span>
         `}
         ${ full_line && !_expanded && html`
@@ -11654,7 +11659,7 @@
                 <span class="pp-key">
                   ${ prefix }:
                 </span>`}
-              Object {
+              ${ value.constructor.name } {
             </span>
             ${ addIndex 
                  (map$1) 
@@ -11674,7 +11679,7 @@
                 <span class="pp-key">
                   ${ prefix }:
                 </span>`}
-              Object {
+              ${ value.constructor.name } {
             </span>
             ${ map$1
                  ((k) => html`
@@ -11687,7 +11692,52 @@
         `}
       </span>
     `)};
-   
+
+  // Function
+
+  const HTMLFunctionTag = (full_line) => (prefix) => (value) =>
+    html`<e-function class="result pp-function"
+                   full_line="${ full_line }"
+                   prefix="${ prefix }"
+                   value="${ value }">
+       </e-function>`;
+
+  const HTMLFunction = {
+    ...HTMLBaseElement ({
+      get: (host, lastValue) => lastValue,
+      set: (host, value, lastValue) => value
+    }),
+    render: noShadow (
+      ({value, full_line, _expanded, _hasExpanded, prefix}) => html`
+      <span class="${ ContainerClasses (full_line) (_expanded) }">
+        ${ !full_line && html`
+          <span class="condensed">
+            ${ (prefix !== '') && html`
+              <span class="pp-key">
+                ${ prefix }:
+              </span>`}
+            ${ value.toString () }  
+          </span>
+        `}
+        ${ (full_line && !_expanded) && html`
+          <span class="collapsed" onclick="${ expandTag }">
+            ${ (prefix !== '') && html`
+              <span class="pp-key">
+                ${ prefix }:
+              </span>`}
+            ${ value.toString () }
+          </span>
+        `}
+        ${ (full_line && _expanded) && html`
+          <span class="expanded" onclick="${ collapseTag }">
+            ${ (prefix !== '') && html`
+              <span class="pp-key">
+                ${ prefix }:
+              </span>`}
+            <span class="pp-code">${ value.toString () }</code>
+          </span>
+      </span>`}`)};
+
   const toBlocks = (full_line) => (prefix) => (value) => 
     cond ([
       [isNil, always (HTMLUndefinedTag (full_line) (prefix))],
@@ -11697,7 +11747,7 @@
       [is (String), always (HTMLStringTag (full_line) (prefix) (value))],
       [is (Array), always (HTMLArrayTag (full_line) (prefix) (value))],
       [is (Promise), always (HTMLPromiseTag (full_line) (prefix) (value))],
-      // Function
+      [is (Function), always (HTMLFunctionTag (full_line) (prefix) (value))],
       [is (Object), always (HTMLObjectTag (full_line) (prefix) (value))],
       // Regular Expression
     ]) (value);
@@ -11709,6 +11759,7 @@
     EString: HTMLString,
     EArray: HTMLArray,
     EPromise: HTMLPromise,
+    EFunction: HTMLFunction,
     EObject: HTMLObject,
   };
 
@@ -11888,7 +11939,7 @@
   const WelcomeBlockView = {
     render: () => html`
     <div class="welcome">
-      <div class="line">Welcome to Efimera v1.0.15</div>
+      <div class="line">Welcome to Efimera v1.0.16</div>
       <div class="line">Type ".help" or press <a href="#" onclick=${moreInfo}>here</a> for more information.</div>
     </div>
   `
