@@ -47,13 +47,17 @@ src: local('monofur   italic'), url('monof56.woff') format('woff');
 	--result-boolean-color: var(--yellow);
 	--result-number-color: var(--yellow);
 	--result-string-color: var(--green);
+	--result-key-color: var(--base01);
 }
 
 /* ---------------------------------------------------- Pretty printing */
 
+.result { display: block; 
+          width: 100%; }
+
 .result > .condensed > .collapsed { display: none; }
 
-.result > .condensed > .condensed { display: inline-block; }
+.result > .condensed > .condensed { display: inline-flex; }
 
 .result > .condensed > .expanded { display: none; }
 
@@ -83,11 +87,11 @@ e-output > .pp-undefined { display: block;
 
 .pp-string { color: var(--result-string-color); }
 
-.pp-string > .collapsed > .collapsed { white-space: nowrap;
-									   display: block;
-									   overflow: hidden;
-						  			   text-overflow: ellipsis; 
-						  			   width: 100%; }
+.pp-string > .collapsed > .collapsed  { white-space: nowrap;
+									    display: block;
+									    overflow: hidden;
+						  			    text-overflow: ellipsis; 
+						  			    width: 100%; }
 
 .pp-array > .collapsed > .collapsed { overflow: hidden;
                                       text-overflow: ellipsis;
@@ -95,11 +99,19 @@ e-output > .pp-undefined { display: block;
 
 .pp-array > .collapsed > .collapsed > .result { display: inline-flex; }
 
-.pp-array > .expanded > .expanded { display: flex;
-                                    flex-direction: column; }
+.pp-array > .expanded > .expanded { display: block; }
 
-.pp-array > .expanded > .expanded > .pp-array-item { display: flex; 
-                                                     padding-left: 1em; }
+.pp-array > .expanded > .expanded > .pp-array-item { 
+  display: block; 
+  padding-left: 1em; 
+  width: calc(100% - 1em);
+}
+
+.pp-object > .collapsed > .collapsed { display: flex; }
+
+.pp-object > .collapsed > .collapsed > .pp-object-property {
+  display: flex;
+}
 
 .pp-object > .expanded > .expanded { display: flex;
                                      flex-direction: column; }
@@ -108,6 +120,8 @@ e-output > .pp-undefined { display: block;
   display: flex;
   padding-left: 1em;
 }
+
+.pp-key { color: var(--result-key-color); }
 
 html, body {
 	width: 100vw;
