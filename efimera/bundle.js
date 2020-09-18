@@ -5642,8 +5642,35 @@
         }) (block);
   // --------------------------- Autocompletion ----------------------------
 
-  const autocomplete = (block) =>
-    insertText (block.autocompletion) (block);
+  const willAutocomplete = (block) => {
+    if (block.autocompletion !== '...' && block.autocompletion !== '') {
+      let start = caret (block) [0];
+      let end = start + length (block.autocompletion);
+      let current_line = caret (block) [1];
+      let text_after = slice (start) (end) (block.lines [current_line]);
+
+      return text_after !== block.autocompletion
+    } else {
+      return false
+    }
+  };
+
+  const autocomplete = (block) => {
+    if (block.autocompletion !== '...' && block.autocompletion !== '') {
+      let start = caret (block) [0];
+      let end = start + length (block.autocompletion);
+      let current_line = caret (block) [1];
+      let text_after = slice (start) (end) (block.lines [current_line]);
+
+      if (text_after !== block.autocompletion) {
+        return insertText (block.autocompletion) (block)
+      } else {
+        return moveCursorTo ([end, current_line]) (block)
+      }
+    } else {
+      return block
+    }
+  };
 
   // --------------------------- Block creation ----------------------------
 
@@ -5662,6 +5689,12 @@
     evolve ({
       blocks: append (block),
       focused: always (length (doc.blocks))
+    }) (doc);
+
+  const insertBlockAfter = (block = createBlock ()) => (doc) =>
+    evolve ({
+      blocks: insert (doc.focused + 1) (block),
+      focused: always (doc.focused + 1)
     }) (doc);
 
   const removeBlock = (idx) => (doc) =>
@@ -5730,7 +5763,7 @@
   };
 
   const autocompletionSpan = (a) => (c) => 
-    '<span class="autocompletion">' + caretSpan(c) + '</span>' + a + '</span>';
+    '<span class="autocompletion">' + caretSpan(c) +  a + '</span>';
 
   const renderLine = (idx) => (line) =>
     lineDiv (idx) 
@@ -11147,7 +11180,18 @@
           update$1 (host) (removeText (1) (host.block));
         }
       } else if (evt.key === 'Delete') {
-        update$1 (host) (deleteText (1) (host.block));
+        if (evt.ctrlKey) {
+          dispatch (host, 'deleteblock', { bubbles: true, composed: true });
+        } else {
+          update$1 (host) (deleteText (1) (host.block));
+        }
+      } else if (evt.key === 'Insert') {
+        if (evt.ctrlKey) {
+          dispatch (host, 'insertblockafter', { bubbles: true, 
+                                                composed: true });
+        } else {
+          return true
+        }
       } else if (evt.key === 'Enter') {
         let singleline = length (host.block.lines) === 1;
         let valid_code = is_evaluable (host.block.lines);
@@ -11184,7 +11228,11 @@
       } else if (evt.key === 'ArrowLeft') {
         update$1 (host) (moveCursorLeft (host.block));
       } else if (evt.key === 'ArrowRight') {
-        update$1 (host) (moveCursorRight (host.block));
+        if (willAutocomplete (host.block)) {
+          update$1 (host) (autocomplete (host.block));
+        } else {
+          update$1 (host) (moveCursorRight (host.block));
+        }
       } else if (evt.key === 'ArrowUp') {
         let b = moveCursorUp (host.block);
         if (equals (host.block.cursor) (b.cursor)) {
@@ -11204,9 +11252,7 @@
       } else if (evt.key === 'Home') {
         update$1 (host) (moveCursorToStart (host.block));
       } else if (evt.key === 'Tab') {
-        if (host.block.autocompletion !== '...') {
-          update$1 (host) (autocomplete (host.block));
-        }
+        update$1 (host) (autocomplete (host.block));
       } else if ((evt.key === 's' || evt.key === 'S') && evt.ctrlKey) {
         dispatch (host, 'save', { bubbles: true, composed: true });
       } else if ((evt.key === 'o' || evt.key === 'O') && evt.ctrlKey) {
@@ -11939,7 +11985,7 @@
   const WelcomeBlockView = {
     render: () => html`
     <div class="welcome">
-      <div class="line">Welcome to Efimera v1.0.16</div>
+      <div class="line">Welcome to Efimera v1.0.17</div>
       <div class="line">Type ".help" or press <a href="#" onclick=${moreInfo}>here</a> for more information.</div>
     </div>
   `
@@ -11961,8 +12007,16 @@
   const onDeleteBlock = (idx) => (host, evt) => {
     if (length (host.doc.blocks) > 1) {
       host.doc = removeBlock (idx) (host.doc);
+      host.results = remove (idx) (1) (host.results);
       doAutocompletion (host);
     }
+  };
+
+  const onInsertBlockAfter = (idx) => (host, evt) => {
+    host.doc = insertBlockAfter () (host.doc);
+    host.results = insert (idx + 1) 
+                          ({ evaluated: false, value: undefined })
+                          (host.results);
   };
 
   const doAutocompletion = (host) => {
@@ -12047,6 +12101,7 @@
                     <e-block block=${b}
                              onmovecursorto=${onBlockClick (idx)}
                              ondeleteblock=${onDeleteBlock (idx)}
+                             oninsertblockafter=${onInsertBlockAfter (idx)}
                              onupdateblock=${onUpdateBlock (idx)}
                              onblockevaluated=${blockEvaluated (idx)}
                              onblocktop=${blockTop}
