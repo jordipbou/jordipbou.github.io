@@ -5296,6 +5296,38 @@
   });
 
   /**
+   * Returns `true` if the specified object property is equal, in
+   * [`R.equals`](#equals) terms, to the given value; `false` otherwise.
+   * You can test multiple properties with [`R.whereEq`](#whereEq).
+   *
+   * @func
+   * @memberOf R
+   * @since v0.1.0
+   * @category Relation
+   * @sig String -> a -> Object -> Boolean
+   * @param {String} name
+   * @param {*} val
+   * @param {*} obj
+   * @return {Boolean}
+   * @see R.whereEq, R.propSatisfies, R.equals
+   * @example
+   *
+   *      const abby = {name: 'Abby', age: 7, hair: 'blond'};
+   *      const fred = {name: 'Fred', age: 12, hair: 'brown'};
+   *      const rusty = {name: 'Rusty', age: 10, hair: 'brown'};
+   *      const alois = {name: 'Alois', age: 15, disposition: 'surly'};
+   *      const kids = [abby, fred, rusty, alois];
+   *      const hasBrownHair = R.propEq('hair', 'brown');
+   *      R.filter(hasBrownHair, kids); //=> [fred, rusty]
+   */
+
+  var propEq =
+  /*#__PURE__*/
+  _curry3(function propEq(name, val, obj) {
+    return equals(val, obj[name]);
+  });
+
+  /**
    * Calls an input function `n` times, returning an array containing the results
    * of those function calls.
    *
@@ -5711,10 +5743,21 @@
         lines: always (['']),
         cursor: always ([0, 0])
       }) (block)
-      : evolve ({
-          lines: addIndex (reject) ((l, idx) => idx === block.cursor [1]),
-          cursor: always ([0, block.cursor [1]])
-        }) (block);
+      : block.cursor [1] === 0 ?
+        evolve ({
+          lines: tail,
+          cursor: always ([0, 0])
+        }) (block)
+        : evolve ({
+            lines: addIndex (reject) ((l, idx) => idx === block.cursor [1]),
+            cursor: always ([
+                      length 
+                        (block.lines 
+                          [min (block.cursor [1] - 1) 
+                               (length (block.lines) - 2)]), 
+                      min (block.cursor [1]) (length (block.lines) - 2)
+                    ])
+          }) (block);
   // --------------------------- Autocompletion ----------------------------
 
   const willAutocomplete = (block) => {
@@ -11251,8 +11294,15 @@
           dispatch (host, 'deleteblock', { bubbles: true, composed: true });
         } else if (evt.ctrlKey) {
           update$1 (host) (deleteLine (host.block));
+          if (length (host.block.lines) === 1) {
+            dispatch (host, 'deleteresult', { bubbles: true, composed: true });
+          }
         } else {
-          update$1 (host) (removeText (1) (host.block));
+          if (emptyBlock (host.block)) {
+            dispatch (host, 'deleteresult', { bubbles: true, composed: true });
+          } else {
+            update$1 (host) (removeText (1) (host.block));
+          }
         }
       } else if (evt.key === 'Delete') {
         if (evt.ctrlKey) {
@@ -11327,6 +11377,11 @@
       } else if (evt.key === 'Home') {
         update$1 (host) (moveCursorToStart (host.block));
       } else if (evt.key === 'Tab') {
+        if (evt.ctrlKey) {
+          // Maintain Ctrl+Tab for changing browser tabs
+          return true
+        }
+
         update$1 (host) (autocomplete (host.block));
       } else if ((evt.key === 's' || evt.key === 'S') && evt.ctrlKey) {
         dispatch (host, 'save', { bubbles: true, composed: true });
@@ -11352,7 +11407,10 @@
       return false
     },
     onkeypress: (host, evt) => {
-      update$1 (host) (insertText (evt.key) (host.block));
+      cond ([
+        [propEq ('key') ('Tab'), () => {}],
+        [T, () => update$1 (host) (insertText (evt.key) (host.block))]
+      ]) (evt);
     }
   });
 
@@ -11870,7 +11928,8 @@
       [is (Promise), always (HTMLPromiseTag (full_line) (prefix) (value))],
       [is (Function), always (HTMLFunctionTag (full_line) (prefix) (value))],
       [is (Object), always (HTMLObjectTag (full_line) (prefix) (value))],
-      // Regular Expression
+      // Regular Expression,
+      // Module!!
     ]) (value);
 
   const ResultDefines = {
@@ -12060,7 +12119,7 @@
   const WelcomeBlockView = {
     render: () => html`
     <div class="welcome">
-      <div class="line">Welcome to Efimera v1.0.18</div>
+      <div class="line">Welcome to Efimera v1.0.19</div>
       <div class="line">Type ".help" or press <a href="#" onclick=${moreInfo}>here</a> for more information.</div>
     </div>
   `
@@ -12084,7 +12143,16 @@
       host.doc = removeBlock (idx) (host.doc);
       host.results = remove (idx) (1) (host.results);
       doAutocompletion (host);
+    } else {
+      host.results = [{ evaluated: false, value: undefined }];
+      host.doc = createDocument ();
     }
+  };
+
+  const onDeleteResult = (idx) => (host, evt) => {
+    host.results = update (idx) 
+                          ([{ evaluated: false, value: undefined }]) 
+                          (host.results);
   };
 
   const onInsertBlockAfter = (idx) => (host, evt) => {
@@ -12150,8 +12218,10 @@
   const onError = (host, evt) =>
     host.error = evt.detail;
 
-  const clearDocument = (host, evt) =>
+  const clearDocument = (host, evt) => {
+    host.results = [{ evaluated: false, value: undefined }];
     host.doc = createDocument ();
+  };
 
   const TermView = {
     doc: { 
@@ -12176,6 +12246,7 @@
                     <e-block block=${b}
                              onmovecursorto=${onBlockClick (idx)}
                              ondeleteblock=${onDeleteBlock (idx)}
+                             ondeleteresult=${onDeleteResult (idx)}
                              oninsertblockafter=${onInsertBlockAfter (idx)}
                              onupdateblock=${onUpdateBlock (idx)}
                              onblockevaluated=${blockEvaluated (idx)}
@@ -16199,6 +16270,37 @@
   }));
 
   /**
+   * Creates a new object from a list key-value pairs. If a key appears in
+   * multiple pairs, the rightmost pair is included in the object.
+   *
+   * @func
+   * @memberOf R
+   * @since v0.3.0
+   * @category List
+   * @sig [[k,v]] -> {k: v}
+   * @param {Array} pairs An array of two-element arrays that will be the keys and values of the output object.
+   * @return {Object} The object made by pairing up `keys` and `values`.
+   * @see R.toPairs, R.pair
+   * @example
+   *
+   *      R.fromPairs([['a', 1], ['b', 2], ['c', 3]]); //=> {a: 1, b: 2, c: 3}
+   */
+
+  var fromPairs =
+  /*#__PURE__*/
+  _curry1$1(function fromPairs(pairs) {
+    var result = {};
+    var idx = 0;
+
+    while (idx < pairs.length) {
+      result[pairs[idx][0]] = pairs[idx][1];
+      idx += 1;
+    }
+
+    return result;
+  });
+
+  /**
    * Returns whether or not a path exists in an object. Only the object's
    * own properties are checked.
    *
@@ -16643,7 +16745,7 @@
    *      R.filter(hasBrownHair, kids); //=> [fred, rusty]
    */
 
-  var propEq =
+  var propEq$1 =
   /*#__PURE__*/
   _curry3$1(function propEq(name, val, obj) {
     return equals$1(val, obj[name]);
@@ -18708,7 +18810,7 @@
 
   const seemsMIDIMessage = (msg) =>
     allPass ([is$1 (Object),
-              propEq ('type', 'midimessage'),
+              propEq$1 ('type', 'midimessage'),
               propSatisfies (seemsMIDIMessageAsArray, 'data')]) (msg);
 
   const seemsArrayOfMIDIMessages =
@@ -18990,7 +19092,7 @@
 
   const seemsMIDIMetaEventObject = (msg) =>
     allPass ([is$1 (Object),
-              propEq ('type', 'metaevent'),
+              propEq$1 ('type', 'metaevent'),
               has$2 ('metaType'),
               has$2 ('data')])
             (msg);
@@ -19031,30 +19133,28 @@
 
   // -------------- Channel Voice messages generation ----------------
 
-  let off = (n, v = 96, ch = 0) => 
-    msg([128 + ch, n, v]);
+  let off = (n = 64, v = 96, ch = 0) => 
+    msg ([128 + ch, n, v]);
 
-  let on = (n, v = 96, ch = 0) => 
-    msg([144 + ch, n, v]);
+  let on = (n = 64, v = 96, ch = 0) => 
+    msg ([144 + ch, n, v]);
 
-  let pp$a = (n, p = 96, ch = 0) => 
-    msg([160 + ch, n, p]);
+  let pp$a = (n = 64, p = 96, ch = 0) => 
+    msg ([160 + ch, n, p]);
 
-  // TODO: If v is undefined (like in cc (37)) resulting message
-  // is not a valid MIDI message !!
-  let cc = (c, v, ch = 0) => 
-    msg([176 + ch, c, v]);
+  let cc = (c = 1, v = 127, ch = 0) => 
+    msg ([176 + ch, c, v]);
 
-  let pc = (p, ch = 0) => 
-    msg([192 + ch, p]);
+  let pc = (p = 0, ch = 0) => 
+    msg ([192 + ch, p]);
 
-  let cp = (p, ch = 0) => 
-    msg([208 + ch, p]);
+  let cp = (p = 96, ch = 0) => 
+    msg ([208 + ch, p]);
 
-  let pb = (v, ch = 0) => 
-    msg([224 + ch, v & 0x7F, v >> 7]);
+  let pb = (v = 8192, ch = 0) => 
+    msg ([224 + ch, v & 0x7F, v >> 7]);
 
-  let rpn = (n, v, ch = 0) => 
+  let rpn = (n = 0, v = 8192, ch = 0) => 
     from$1 ([
     	cc (101, n >> 7, ch),
     	cc (100, n % 128, ch), 
@@ -19064,8 +19164,8 @@
     	cc (100, 127, ch)
     ]);
 
-  let nrpn = (n, v, ch = 0) => 
-  from$1([
+  let nrpn = (n = 0, v = 8192, ch = 0) => 
+  from$1 ([
   	cc(99, n >> 7, ch),
   	cc(98, n % 128, ch),
   	cc(6, v >> 7, ch),
@@ -19077,39 +19177,39 @@
   // -------------- System common messages generation ----------------
 
   let syx = (b) => 
-    msg([240, ...b, 247]);
+    msg ([240, ...b, 247]);
 
   let tc = (t, v) => 
-    msg([241, (t << 4) + v]);
+    msg ([241, (t << 4) + v]);
 
   let spp = (b) => 
-    msg([242, b % 128, b >> 7]);
+    msg ([242, b % 128, b >> 7]);
 
   let ss = (s) => 
-    msg([243, s]);
+    msg ([243, s]);
 
   let tun = () => 
-    msg([246]);
+    msg ([246]);
 
   // ------------- System real time messages generation --------------
 
   let mc = () => 
-    msg([248]);
+    msg ([248]);
 
   let start = () => 
-    msg([250]);
+    msg ([250]);
 
   let cont = () => 
-    msg([251]);
+    msg ([251]);
 
   let stop = () => 
-    msg([252]);
+    msg ([252]);
 
   let as = () => 
-    msg([254]);
+    msg ([254]);
 
   let rst = () => 
-    msg([255]);
+    msg ([255]);
 
   let panic = () => 
   {
@@ -19123,7 +19223,7 @@
   		}
   	}
 
-  	return from$1(panic_msgs)
+  	return from$1 (panic_msgs)
   };
 
   // ------------- Generic property modification helpers -------------
@@ -19232,14 +19332,14 @@
 
   const isActiveNote = (mpeZone) => (msg) => 
     isNote (msg) ?
-      any (both (propEq ('note') (view (note) (msg)))
-                (propEq ('channel') (view (channel) (msg))))
+      any (both (propEq$1 ('note') (view (note) (msg)))
+                (propEq$1 ('channel') (view (channel) (msg))))
           (mpeZone.activeNotes)
       : false;
 
   const seemsActiveNote = (mpeZone) => (msg) =>
     isNote (msg) ?
-      any (propEq ('note') (view (note) (msg))) 
+      any (propEq$1 ('note') (view (note) (msg))) 
           (mpeZone.activeNotes)
       : false;
 
@@ -19269,8 +19369,8 @@
         without$1 
           ([head$1 
             (filter$1 
-              (both (propEq ('note') (view (note) (msg)))
-                    (propEq ('channel') (view (channel) (msg))))
+              (both (propEq$1 ('note') (view (note) (msg)))
+                    (propEq$1 ('channel') (view (channel) (msg))))
               (mpeZone.activeNotes))])
     }) (mpeZone);
 
@@ -19321,21 +19421,58 @@
         [T$1, always$1 (mpeZone)]
       ]) (msg);
 
-  // ------------------------- toMPE algoriths -----------------------------
+  // ------------------------ toMPE algorithms -----------------------------
+
+  // Helper function to find notes per channel on mpe zone
+  const notesPerChannel = (mpeZone) =>
+    map$2 ((c) => [c, length$1 (filter$1 ((n) => n.channel === c)
+                                   (mpeZone.activeNotes))])
+        (mpeZone.channels);
+
+  // Algorithm: select channel on mpe zone as the one with least notes -----
 
   // Sort channels by note usage (ascending) and use first one 
   const leastNotesChannel = (mpeZone) => (msg) =>
     head$1 (
       head$1 (
         sort$1 ((a, b) => a [1] - b [1])
-             (map$2 ((c) => [c, length$1 (filter$1 ((n) => n.channel === c)
-                                             (mpeZone.activeNotes))])
-                  (mpeZone.channels))));
+             (notesPerChannel (mpeZone))));
 
-  // KeyRange -> [ min, max, priority ]
-  const channelByKeyRange = (keyRanges) => (mpeZone) => (msg) =>
-    // Filter channels that allow current note
-    {};
+
+  // Algorithm: select channel based on key ranges with priorities ---------
+
+  // Uses the following data structure to define key ranges:
+  // [{ channel: n, min: n, max: n, weight: n }]
+  // Where:
+  // - channel -> the channel of the mpe zone that this key range will
+  //              be mapped to
+  // - min -> minimum note value that this range represents (included)
+  // - max -> maximum note value that this range represents (included)
+  // - weight -> relative priority to sort key ranges 
+
+  // Helper function to add notes per channel to key ranges
+  const addNotes = (notesxchannel) => (v) => 
+    assoc ('notes') 
+          (fromPairs (notesxchannel) [v.channel]) (v);
+
+  // Always prefer empty channels to weight
+  const byNotesAndWeight = (a, b) =>
+    a.notes === b.notes ?
+      b.weight - a.weight
+      : a.notes - b.notes;
+
+  // Select channel filtering key ranges that the note belongs to and
+  // then sort by weight and number of notes on the channel.
+  const channelByKeyRange = (keyRanges) => (mpeZone) => (msg) => {
+    let msg_note = view (note) (msg);
+    let noteInRange = (n) => (v) => v.min <= n && v.max >= n;
+
+    return path$1 ([0, 'channel'])
+                (sort$1 (byNotesAndWeight)
+                      (map$2 (addNotes (notesPerChannel (mpeZone)))
+                           (filter$1 (noteInRange (msg_note)) 
+                                   (keyRanges))))
+  };
 
   /** PURE_IMPORTS_START _Observable,_util_isArray,_util_isFunction,_operators_map PURE_IMPORTS_END */
   function fromEvent(target, eventName, options, resultSelector) {
@@ -19452,7 +19589,7 @@
 
   let seemsMIDILoop =
     both (seemsMIDIFile)
-         (propEq ('loop', true));
+         (propEq$1 ('loop', true));
 
   // -------------------------- Helpers ------------------------------
 
@@ -20178,7 +20315,7 @@
     )
   };
 
-  const version$1 = '1.0.37';
+  const version$1 = '1.0.39';
 
   //// --------------------- Other utilities -------------------------
 
@@ -20196,10 +20333,12 @@
   exports.MIDIPlayer = MIDIPlayer;
   exports.MidiParser = _MidiParser;
   exports.QNPM2BPM = QNPM2BPM;
+  exports.addNotes = addNotes;
   exports.as = as;
   exports.asNoteOff = asNoteOff;
   exports.asNoteOn = asNoteOn;
   exports.autocompletionSpan = autocompletionSpan;
+  exports.byNotesAndWeight = byNotesAndWeight;
   exports.byteEq = byteEq;
   exports.byteEqBy = byteEqBy;
   exports.caretSpan = caretSpan;
@@ -20288,6 +20427,7 @@
   exports.msg = msg;
   exports.note = note;
   exports.noteEq = noteEq;
+  exports.notesPerChannel = notesPerChannel;
   exports.npmImport = npmImport;
   exports.nrpn = nrpn;
   exports.off = off;
