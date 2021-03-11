@@ -9,12 +9,13 @@
 	<link rel=icon type=image/icon href=./favicon.ico>
 	<link rel=stylesheet href=./bundle.css>
   <script type=module src=./bundle.js></script>
-  <script>
-    var testString = 'Lorem ipsum dolor amet titi fundel logrian summum maximus remodelarum est. Rosa rosae toma tomae dale dolae.'
-    var testArray = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]
-    var testObject = { some: 1, thing: true, that: undefined, goes: 'hello', wrong: 'world' }
-    var testSubArray = [ 50, testString, testObject, [ undefined, testArray, [ testObject ] ] ]
-    var testSubObject = { a: testArray, b: testSubArray, c: testObject }
+  <script type=module>
+    window.R = efimera.R
+    window.X = efimera.X
+    window.O = efimera.O
+
+    import * as M from 'https://unpkg.com/frmidi'
+    window.M = M
   </script>
 </head>
 <body>
