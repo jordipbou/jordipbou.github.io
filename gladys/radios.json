@@ -1,0 +1,23 @@
+[
+	{
+		"channel_id": 1,
+		"audio_url": "https://s5.radio.co/s836f2ed9a/listen",
+		"picture_url": "https://s3-eu-west-1.amazonaws.com/rgp.gladyscloud/radio/radio_RGP.jpg",
+		"title": "Radio Gladys Palmera EN VIVO",
+		"subtitle": "Sonando música de autor..."
+	},
+	{
+		"channel_id": 3,
+		"audio_url": "https://radio-online.gladyspalmera.com:8001/ch03",
+		"picture_url": "https://s3-eu-west-1.amazonaws.com/rgp.gladyscloud/radio/radio_CGP.jpg",
+		"title": "Colección Gladys Palmera EN VIVO",
+		"subtitle": "Sonando música de autor..."
+	},
+	{
+		"channel_id": 4,
+		"audio_url": "https://radio-online.gladyspalmera.com:8001/ch04",
+		"picture_url": "https://s3-eu-west-1.amazonaws.com/rgp.gladyscloud/radio/radio_RGP.jpg",
+		"title": "Latin Fresh EN VIVO",
+		"subtitle": "Sonando música de autor..."
+	}
+]
